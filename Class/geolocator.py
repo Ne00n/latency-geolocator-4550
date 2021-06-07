@@ -36,6 +36,7 @@ class Geolocator:
                         list[lookup[1]].append(line['ip'])
                     else:
                         if len(list[lookup[1]]) < 50: list[lookup[1]].append(line['ip'])
+                dumpJson = ""
         print("Saving","pingable.json")
         with open(os.getcwd()+'/pingable.json', 'w') as f:
             json.dump(list, f)
