@@ -1,4 +1,4 @@
-import pyasn, time, json, re, os
+import subprocess, pyasn, time, json, re, os
 
 class Geolocator:
 
@@ -8,6 +8,10 @@ class Geolocator:
         print("Loading asn.dat")
         self.asndb = pyasn.pyasn(os.getcwd()+'/asn.dat')
         self.masscanDir = os.getcwd()+masscanDir
+
+    def cmd(self,cmd):
+        p = subprocess.run(cmd, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+        return [p.stdout.decode('utf-8'),p.stderr.decode('utf-8')]
 
     def masscan(self):
         print("Generating json")
@@ -40,3 +44,23 @@ class Geolocator:
         print("Saving","pingable.json")
         with open(os.getcwd()+'/pingable.json', 'w') as f:
             json.dump(list, f)
+
+    def getIPs(self,pingable,row,length=1000):
+        list,current,count = [],0,0
+        for subnet,ips in pingable.items():
+            current += 1
+            if current >= row:
+                list.append(ips[0])
+                count += 1
+            if count == length: return list
+        return list
+
+    def geolocate(self):
+        print("Geolocate")
+        print("Loading locations.json")
+        with open(os.getcwd()+"/locations.json", 'r') as f:
+            locations = json.load(f)
+        print("Loading pingable.json")
+        with open(os.getcwd()+"/pingable.json", 'r') as f:
+            pingable = json.load(f)
+        print("Got",str(len(pingable)),"subnets")
