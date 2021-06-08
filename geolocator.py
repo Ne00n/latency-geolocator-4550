@@ -14,3 +14,5 @@ elif sys.argv[1] == "geolocate":
     geolocator.geolocate()
 elif sys.argv[1] == "generate":
     geolocator.generate()
+elif sys.argv[1] == "debug":
+    geolocator.debug(sys.argv[2])
