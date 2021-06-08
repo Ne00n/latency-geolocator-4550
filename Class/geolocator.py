@@ -150,7 +150,10 @@ class Geolocator:
                         routing[data[0]]['latency'] = subnets[location['name']][data[0]]
                         routing[data[0]]['datacenter'] = location['name']
                     else:
-                        if routing[data[0]]['latency'] > subnets[location['name']][data[0]]:
+                        if routing[data[0]]['latency'] == "retry" or subnets[location['name']][data[0]] == "retry":
+                            print("Skipping",data[0])
+                            continue
+                        if float(routing[data[0]]['latency']) > float(subnets[location['name']][data[0]]):
                             routing[data[0]]['latency'] = subnets[location['name']][data[0]]
                             routing[data[0]]['datacenter'] = location['name']
 
