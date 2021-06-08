@@ -1,4 +1,5 @@
 import subprocess, pyasn, time, json, re, os
+from datetime import datetime
 
 class Geolocator:
 
@@ -89,6 +90,7 @@ class Geolocator:
         row = 0
         while row < len(pingable):
             ips = self.getIPs(pingable,row)
+            current = int(datetime.now().timestamp())
             for location in locations:
                 print("Running fping on",location['name'])
                 cmd = "ssh root@"+location['ip']+" fping -c2 "
@@ -104,4 +106,7 @@ class Geolocator:
                 with open(os.getcwd()+'/data/'+location['name']+"-subnets.json", 'w') as f:
                     json.dump(subnets, f)
             row += 1000
+            currentLoop = int(datetime.now().timestamp())
             print("Done",row,"of",len(pingable))
+            diff = currentLoop - current
+            print("Finished in approximately",round(diff * ( (len(pingable) - row) / 1000) / 60),"minutes")
