@@ -4,12 +4,15 @@ from datetime import datetime
 
 class Geolocator:
 
-    masscanDir,asndb = "",""
+    masscanDir,locations,asndb = "","",""
 
     def __init__(self,masscanDir="/masscan/"):
         print("Loading asn.dat")
         self.asndb = pyasn.pyasn(os.getcwd()+'/asn.dat')
         self.masscanDir = os.getcwd()+masscanDir
+        print("Loading locations.json")
+        with open(os.getcwd()+"/locations.json", 'r') as f:
+            self.locations = json.load(f)
 
     def cmd(self,cmd):
         p = subprocess.run(cmd, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
@@ -97,21 +100,51 @@ class Geolocator:
             print(location['name'],"Done",row,"of",len(pingable))
             diff = currentLoop - current
             print(location['name'],"Finished in approximately",round(diff * ( (len(pingable) - row) / 1000) / 60),"minutes")
+        print(location['name'],"Done")
 
     def geolocate(self):
         print("Geolocate")
-        print("Loading locations.json")
-        with open(os.getcwd()+"/locations.json", 'r') as f:
-            locations = json.load(f)
         print("Loading pingable.json")
         with open(os.getcwd()+"/pingable.json", 'r') as f:
             pingable = json.load(f)
         print("Got",str(len(pingable)),"subnets")
 
-        for location in locations:
+        for location in self.locations:
             if os.path.exists(os.getcwd()+'/data/'+location['name']+"-subnets.json"):
                 os.remove((os.getcwd()+'/data/'+location['name']+"-subnets.json"))
 
-        for location in locations:
+        for location in self.locations:
             p = Process(target=self.fpingLocation, args=([pingable,location]))
             p.start()
+
+    def generate(self):
+        print("Generate")
+        print("Loading asn.dat")
+        with open(os.getcwd()+'/asn.dat', 'r') as f:
+            asn = f.read()
+        subnets,routing = {},{}
+        for location in self.locations:
+            print("Loading",location['name']+"-subnets.json")
+            with open(os.getcwd()+'/data/'+location['name']+"-subnets.json", 'r') as f:
+                subnets[location['name']] = json.load(f)
+        lines = asn.splitlines()
+        for line in lines:
+            data = line.split("\t")
+            for location in self.locations:
+                if data[0] in subnets[location['name']]:
+                    if data[0] not in routing:
+                        routing[data[0]] = {}
+                        routing[data[0]]['latency'] = subnets[location['name']][data[0]]
+                        routing[data[0]]['datacenter'] = location['name']
+                    else:
+                        if routing[data[0]]['latency'] > subnets[location['name']][data[0]]:
+                            routing[data[0]]['latency'] = subnets[location['name']][data[0]]
+                            routing[data[0]]['datacenter'] = location['name']
+
+                else:
+                    print("Could not find",data[0],"in",location['name'])
+        export = ""
+        for row in routing.items():
+            export += row[0]+" => "+row[1]['datacenter']+"\n"
+        with open(os.getcwd()+'/data/dc.conf', 'a') as out:
+            out.write(export)

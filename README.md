@@ -29,3 +29,8 @@ Be warned, the memory usage will be up to 5 times the masscan .json file size!<b
 python3 geolocator.py geolocate
 ```
 This will take a few hours.
+
+3. Generate the gdnsd datacenter subnet mapping file
+```
+python3 geolocator.py generate
+```
