@@ -146,5 +146,5 @@ class Geolocator:
         export = ""
         for row in routing.items():
             export += row[0]+" => "+row[1]['datacenter']+"\n"
-        with open(os.getcwd()+'/data/dc.conf', 'a') as out:
+        with open(os.getcwd()+'/data/dc.conf', 'w+') as out:
             out.write(export)
