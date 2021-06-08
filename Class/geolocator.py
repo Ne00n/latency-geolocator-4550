@@ -1,4 +1,5 @@
 import subprocess, pyasn, time, json, re, os
+from multiprocessing import Process
 from datetime import datetime
 
 class Geolocator:
@@ -73,6 +74,30 @@ class Geolocator:
             subnet[lookup[1]] = ms
         return subnet
 
+    def fpingLocation(self,pingable,location):
+        row = 0
+        while row < len(pingable):
+            ips = self.getIPs(pingable,row)
+            current = int(datetime.now().timestamp())
+            print(location['name'],"Running fping")
+            cmd = "ssh root@"+location['ip']+" fping -c2 "
+            cmd += " ".join(ips)
+            result = self.cmd(cmd)
+            latency = self.getAvrg(result[1])
+            subnets = self.mapToSubnet(latency)
+            print(location['name'],"Updating",location['name']+"-subnets.json")
+            if os.path.exists(os.getcwd()+'/data/'+location['name']+"-subnets.json"):
+                with open(os.getcwd()+'/data/'+location['name']+"-subnets.json", 'r') as f:
+                    subnetsOld = json.load(f)
+                subnets = {**subnets, **subnetsOld}
+            with open(os.getcwd()+'/data/'+location['name']+"-subnets.json", 'w') as f:
+                json.dump(subnets, f)
+            row += 1000
+            currentLoop = int(datetime.now().timestamp())
+            print(location['name'],"Done",row,"of",len(pingable))
+            diff = currentLoop - current
+            print(location['name'],"Finished in approximately",round(diff * ( (len(pingable) - row) / 1000) / 60),"minutes")
+
     def geolocate(self):
         print("Geolocate")
         print("Loading locations.json")
@@ -87,26 +112,6 @@ class Geolocator:
             if os.path.exists(os.getcwd()+'/data/'+location['name']+"-subnets.json"):
                 os.remove((os.getcwd()+'/data/'+location['name']+"-subnets.json"))
 
-        row = 0
-        while row < len(pingable):
-            ips = self.getIPs(pingable,row)
-            current = int(datetime.now().timestamp())
-            for location in locations:
-                print("Running fping on",location['name'])
-                cmd = "ssh root@"+location['ip']+" fping -c2 "
-                cmd += " ".join(ips)
-                result = self.cmd(cmd)
-                latency = self.getAvrg(result[1])
-                subnets = self.mapToSubnet(latency)
-                print("Updating",location['name']+"-subnets.json")
-                if os.path.exists(os.getcwd()+'/data/'+location['name']+"-subnets.json"):
-                    with open(os.getcwd()+'/data/'+location['name']+"-subnets.json", 'r') as f:
-                        subnetsOld = json.load(f)
-                    subnets = {**subnets, **subnetsOld}
-                with open(os.getcwd()+'/data/'+location['name']+"-subnets.json", 'w') as f:
-                    json.dump(subnets, f)
-            row += 1000
-            currentLoop = int(datetime.now().timestamp())
-            print("Done",row,"of",len(pingable))
-            diff = currentLoop - current
-            print("Finished in approximately",round(diff * ( (len(pingable) - row) / 1000) / 60),"minutes")
+        for location in locations:
+            p = Process(target=self.fpingLocation, args=([pingable,location]))
+            p.start()
