@@ -18,6 +18,19 @@ class Geolocator:
         p = subprocess.run(cmd, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
         return [p.stdout.decode('utf-8'),p.stderr.decode('utf-8')]
 
+    def debug(self,ip):
+        lookup = self.asndb.lookup(ip)
+        print("Subnet",lookup[1])
+        subnets = {}
+        for location in self.locations:
+            print("Loading",location['name']+"-subnets.json")
+            with open(os.getcwd()+'/data/'+location['name']+"-subnets.json", 'r') as f:
+                subnets[location['name']] = json.load(f)
+            if lookup[1] in subnets[location['name']]:
+                print("Latency",subnets[location['name']][lookup[1]],"ms")
+            else:
+                print("Not found in",location['name'])
+
     def masscan(self):
         print("Generating json")
         files = os.listdir(self.masscanDir)
