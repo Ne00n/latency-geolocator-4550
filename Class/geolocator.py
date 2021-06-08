@@ -55,6 +55,23 @@ class Geolocator:
             if count == length: return list
         return list
 
+    def getAvrg(self,result):
+        latency = {}
+        parsed = re.findall("([0-9.]+).*?:.*?([0-9+])%(.*?\/([0-9.]+))?",result, re.MULTILINE)
+        for row in parsed:
+            if row[3] != "":
+                latency[row[0]] = row[3]
+            else:
+                latency[row[0]] = "retry"
+        return latency
+
+    def mapToSubnet(self,latency):
+        subnet = {}
+        for ip, ms in latency.items():
+            lookup = self.asndb.lookup(ip)
+            subnet[lookup[1]] = ms
+        return subnet
+
     def geolocate(self):
         print("Geolocate")
         print("Loading locations.json")
@@ -64,3 +81,27 @@ class Geolocator:
         with open(os.getcwd()+"/pingable.json", 'r') as f:
             pingable = json.load(f)
         print("Got",str(len(pingable)),"subnets")
+
+        for location in locations:
+            if os.path.exists(os.getcwd()+'/data/'+location['name']+"-subnets.json"):
+                os.remove((os.getcwd()+'/data/'+location['name']+"-subnets.json"))
+
+        row = 0
+        while row < len(pingable):
+            ips = self.getIPs(pingable,row)
+            for location in locations:
+                print("Running fping on",location['name'])
+                cmd = "ssh root@"+location['ip']+" fping -c2 "
+                cmd += " ".join(ips)
+                result = self.cmd(cmd)
+                latency = self.getAvrg(result[1])
+                subnets = self.mapToSubnet(latency)
+                print("Updating",location['name']+"-subnets.json")
+                if os.path.exists(os.getcwd()+'/data/'+location['name']+"-subnets.json"):
+                    with open(os.getcwd()+'/data/'+location['name']+"-subnets.json", 'r') as f:
+                        subnetsOld = json.load(f)
+                    subnets = {**subnets, **subnetsOld}
+                with open(os.getcwd()+'/data/'+location['name']+"-subnets.json", 'w') as f:
+                    json.dump(subnets, f)
+            row += 1000
+            print("Done",row,"of",len(pingable))
