@@ -35,14 +35,13 @@ Be warned, the memory usage will be up to 5 times the masscan .json file size!<b
 ```
 python3 geolocator.py geolocate
 ```
-This will take a few hours.
+This process is threaded, independent how many locations you have, it will likely take 3 hours<br />
+Each Thread will consume up to 1.5GB of Memory, make sure you are not going OOM
 
 3. Generate the [gdnsd](https://github.com/gdnsd/gdnsd) datacenter subnet mapping file
 ```
 python3 geolocator.py generate
 ```
-This process is threaded, independent how many locations you have, it will likely take 3 hours<br />
-Each Thread will consume up to 1.5GB of Memory, make sure you are not going OOM
 
 4. #Lunch [gdnsd](https://github.com/gdnsd/gdnsd)
 ```
