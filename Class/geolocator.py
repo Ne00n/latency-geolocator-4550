@@ -125,8 +125,6 @@ class Geolocator:
         for location in self.locations:
             if os.path.exists(os.getcwd()+'/data/'+location['name']+"-subnets.json"):
                 os.remove((os.getcwd()+'/data/'+location['name']+"-subnets.json"))
-
-        for location in self.locations:
             p = Process(target=self.fpingLocation, args=([pingable,location]))
             p.start()
 
