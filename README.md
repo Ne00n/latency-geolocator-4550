@@ -37,17 +37,17 @@ python3 geolocator.py geolocate
 ```
 This will take a few hours.
 
-3. Generate the gdnsd datacenter subnet mapping file
+3. Generate the [gdnsd](https://github.com/gdnsd/gdnsd) datacenter subnet mapping file
 ```
 python3 geolocator.py generate
 ```
 This process is threaded, independent how many locations you have, it will likely take 3 hours<br />
 Each Thread will consume up to 1.5GB of Memory, make sure you are not going OOM
 
-4. #Lunch gdnsd
+4. #Lunch [gdnsd](https://github.com/gdnsd/gdnsd)
 ```
 cp config /etc/gdnsd/
 cp myahcdn.net /etc/gdnsd/zones
 cp data/dc.conf /etc/gdnsd/geoip
-/etc/init.d/geodns restart
+/etc/init.d/gdnsd restart
 ```
