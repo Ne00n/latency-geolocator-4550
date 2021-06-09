@@ -1,4 +1,4 @@
-import subprocess, pyasn, time, json, re, os
+import subprocess, pyasn, time, json, sys, re, os
 from multiprocessing import Process
 from datetime import datetime
 
@@ -124,6 +124,8 @@ class Geolocator:
 
         for location in self.locations:
             if os.path.exists(os.getcwd()+'/data/'+location['name']+"-subnets.json"):
+                answer = input(location['name']+"-subnets.json already exists. Do you want to rebuild? (y/n): ")
+                if answer != "y": continue
                 os.remove((os.getcwd()+'/data/'+location['name']+"-subnets.json"))
             p = Process(target=self.fpingLocation, args=([pingable,location]))
             p.start()
