@@ -7,6 +7,16 @@ geodns databases are from the past, we gonna build our own with Blackjack and Ho
 pip3 install pyasn
 ```
 
+**masscan**<br />
+Example for running masscan (icmp/ping only)
+```
+masscan --randomize-hosts 0.0.0.0/0 --ping  --excludefile exclude.conf --rate 50000 --rotate 5min --rotate-dir /var/log/masscan/ --output-format json --output-filename icmp.json
+```
+This will scan the entire internet, except a few excluded ranges with 50kpps randomly<br />
+I would suggest you talk to your ISP, especially on Virtual Machines before sending 50kpps if they are fine with it.
+
+As long its only icmp scanning, I have seen not a single abuse.
+
 **Prepare**<br />
 Put [masscan](https://github.com/robertdavidgraham/masscan) json files into masscan/<br />
 Rename locations.example.json to locations.json and fill it up<br />
