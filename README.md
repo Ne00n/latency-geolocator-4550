@@ -8,12 +8,19 @@ pip3 install pyasn
 ```
 
 **Prepare**<br />
-Put masscan json files into masscan/<br />
+Put [masscan](https://github.com/robertdavidgraham/masscan) json files into masscan/<br />
 Rename locations.example.json to locations.json and fill it up<br />
+```
+cp locations.example.json locations.json
+```
 Get latest routing table dump
 ```
 pyasn_util_download.py --latest
 pyasn_util_convert.py --single rib.2021* asn.dat
+```
+You may need to beforehand
+```
+apt-get install gcc python3-dev
 ```
 
 **Usage**<br />
