@@ -15,7 +15,7 @@ masscan --randomize-hosts 0.0.0.0/0 --ping  --excludefile exclude.conf --rate 50
 This will scan the entire internet, except a few excluded ranges with 50kpps randomly<br />
 I would suggest you talk to your ISP, especially on Virtual Machines before sending 50kpps if they are fine with it.
 
-As long its only icmp scanning, I have seen not a single abuse.
+As of now, I have not seen a single abuse while doing so.
 
 **Prepare**<br />
 Put [masscan](https://github.com/robertdavidgraham/masscan) json files into masscan/<br />
