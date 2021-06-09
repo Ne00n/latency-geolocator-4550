@@ -41,5 +41,13 @@ This will take a few hours.
 ```
 python3 geolocator.py generate
 ```
-This process is threaded, independed how many locations you have, it will likely take 3 hours<br />
-Each Thread will consume up to 1.5GB, make sure you are not going OOM
+This process is threaded, independent how many locations you have, it will likely take 3 hours<br />
+Each Thread will consume up to 1.5GB of Memory, make sure you are not going OOM
+
+4. #Lunch gdnsd
+```
+cp config /etc/gdnsd/
+cp myahcdn.net /etc/gdnsd/zones
+cp data/dc.conf /etc/gdnsd/geoip
+/etc/init.d/geodns restart
+```
