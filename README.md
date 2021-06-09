@@ -41,3 +41,5 @@ This will take a few hours.
 ```
 python3 geolocator.py generate
 ```
+This process is threaded, independed how many locations you have, it will likely take 3 hours<br />
+Each Thread will consume up to 1.5GB, make sure you are not going OOM
