@@ -18,7 +18,7 @@ Get latest routing table dump
 pyasn_util_download.py --latest
 pyasn_util_convert.py --single rib.2021* asn.dat
 ```
-You may need to beforehand
+You may need run beforehand
 ```
 apt-get install gcc python3-dev
 ```
