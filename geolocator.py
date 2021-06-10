@@ -16,3 +16,5 @@ elif sys.argv[1] == "generate":
     geolocator.generate()
 elif sys.argv[1] == "debug":
     geolocator.debug(sys.argv[2])
+elif sys.argv[1] == "corrector":
+    geolocator.corrector()
