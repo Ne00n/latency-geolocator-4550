@@ -1,6 +1,7 @@
 import subprocess, random, pyasn, time, json, sys, re, os
 from multiprocessing import Process
 from datetime import datetime
+from shutil import copyfile
 
 class Geolocator:
 
@@ -152,13 +153,27 @@ class Geolocator:
         self.loadPingable()
         print("Got",str(len(self.pingable)),"subnets")
 
+        run = {}
         for location in self.locations:
             if os.path.exists(os.getcwd()+'/data/'+location['name']+"-subnets.json"):
                 answer = input(location['name']+"-subnets.json already exists. Do you want to rebuild? (y/n): ")
                 if answer != "y": continue
+                run[location['name']] = "y"
+                print(location['name'],"backing up existing file")
+                if os.path.exists(os.getcwd()+'/data/'+location['name']+"-subnets.json.bak"):
+                    answer = input(location['name']+"-subnets.json.bak already exists. Override? (y/n): ")
+                    if answer == "y":
+                        copyfile(os.getcwd()+'/data/'+location['name']+"-subnets.json", os.getcwd()+'/data/'+location['name']+"-subnets.json.bak")
+                else:
+                    copyfile(os.getcwd()+'/data/'+location['name']+"-subnets.json", os.getcwd()+'/data/'+location['name']+"-subnets.json.bak")
                 os.remove((os.getcwd()+'/data/'+location['name']+"-subnets.json"))
-            p = Process(target=self.fpingLocation, args=([location]))
-            p.start()
+            else:
+                run[location['name']] = "y"
+
+        for location in self.locations:
+            if len(run) > 0 and location['name'] in run:
+                p = Process(target=self.fpingLocation, args=([location]))
+                p.start()
 
     def generate(self):
         print("Generate")
