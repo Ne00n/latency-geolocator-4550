@@ -29,9 +29,14 @@ class Geolocator:
         print("Subnet",lookup[1])
         subnets = {}
         for location in self.locations:
-            print("Loading",location['name']+"-subnets.json")
-            with open(os.getcwd()+'/data/'+location['name']+"-subnets.json", 'r') as f:
-                subnets[location['name']] = json.load(f)
+            print("Loading",location['name']+"-subnets.csv")
+            with open(os.getcwd()+'/data/'+location['name']+"-subnets.csv", 'r') as f:
+                file = f.read()
+            dict = {}
+            for row in file.splitlines():
+                line = row.split(",")
+                dict[line[0]] = line[1]
+            subnets[location['name']] = dict
             if lookup[1] in subnets[location['name']]:
                 print("Latency",subnets[location['name']][lookup[1]],"ms")
             else:
