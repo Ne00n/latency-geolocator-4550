@@ -110,6 +110,13 @@ class Geolocator:
             subnet[lookup[1]] = ms
         return subnet
 
+    def csvToDict(self,csv):
+        dict = {}
+        for row in csv.splitlines():
+            line = row.split(",")
+            dict[line[0]] = line[1]
+        return dict
+
     def fpingLocation(self,location,update=False):
         row = 0
         length = len(self.pingable)
@@ -118,6 +125,7 @@ class Geolocator:
             if update is False: ips = self.getIPs(row)
             if update is True: ips = self.SliceAndDice(self.notPingable,row)
             current = int(datetime.now().timestamp())
+            print(location['name'],"Running fping")
             cmd = "ssh root@"+location['ip']+" fping -c2 "
             cmd += " ".join(ips)
             result = self.cmd(cmd)
@@ -131,15 +139,16 @@ class Geolocator:
                 with open(os.getcwd()+'/data/'+location['name']+"-subnets.csv", "a") as f:
                     f.write(csv)
             else:
-                print(location['name'],"Merging",location['name']+"-subnets.json")
-                with open(os.getcwd()+'/data/'+location['name']+"-subnets.json", 'r') as f:
-                    subnetsCurrent = json.load(f)
-                #print(subnets)
-                for line in subnets.items():
+                print(location['name'],"Merging",location['name']+"-subnets.csv")
+                with open(os.getcwd()+'/data/'+location['name']+"-subnets.csv", 'r') as f:
+                    subnetsCurrentRaw = f.read()
+                subnetsCurrent = csvToDict(subnetsCurrentRaw)
+                subnetsCurrentRaw = ""
+                for line in subnetsCurrent.items():
                     subnetsCurrent[line[0]] = line
-                print(location['name'],"Saving",location['name']+"-subnets.json")
-                with open(os.getcwd()+'/data/'+location['name']+"-subnets.json", 'w') as f:
-                    json.dump(subnetsCurrent, f)
+                print(location['name'],"Saving",location['name']+"-subnets.csv")
+                with open(os.getcwd()+'/data/'+location['name']+"-subnets.csv", "w") as f:
+                    f.write(subnetsCurrent)
             row += 1000
             currentLoop = int(datetime.now().timestamp())
             print(location['name'],"Done",row,"of",length)
@@ -147,15 +156,11 @@ class Geolocator:
             print(location['name'],"Finished in approximately",round(diff * ( (length - row) / 1000) / 60),"minutes")
         print(location['name'],"Done")
 
-    def geolocate(self):
-        print("Geolocate")
-        self.loadPingable()
-        print("Got",str(len(self.pingable)),"subnets")
-
+    def checkFiles(self,type="rebuild"):
         run = {}
         for location in self.locations:
             if os.path.exists(os.getcwd()+'/data/'+location['name']+"-subnets.csv"):
-                answer = input(location['name']+"-subnets.csv already exists. Do you want to rebuild? (y/n): ")
+                answer = input(location['name']+"-subnets.csv already exists. Do you want to "+type+"? (y/n): ")
                 if answer != "y": continue
                 run[location['name']] = "y"
                 print(location['name'],"backing up existing file")
@@ -165,9 +170,18 @@ class Geolocator:
                         copyfile(os.getcwd()+'/data/'+location['name']+"-subnets.csv", os.getcwd()+'/data/'+location['name']+"-subnets.csv.bak")
                 else:
                     copyfile(os.getcwd()+'/data/'+location['name']+"-subnets.csv", os.getcwd()+'/data/'+location['name']+"-subnets.csv.bak")
-                os.remove((os.getcwd()+'/data/'+location['name']+"-subnets.csv"))
+                if type == "rebuild":
+                    os.remove((os.getcwd()+'/data/'+location['name']+"-subnets.csv"))
             else:
                 run[location['name']] = "y"
+        return run
+
+    def geolocate(self):
+        print("Geolocate")
+        self.loadPingable()
+        print("Got",str(len(self.pingable)),"subnets")
+
+        run = self.checkFiles()
 
         for location in self.locations:
             if len(run) > 0 and location['name'] in run:
@@ -219,9 +233,10 @@ class Geolocator:
         print("Corrector")
         notPingable = []
         for location in self.locations:
-            print("Loading",location['name']+"-subnets.json")
-            with open(os.getcwd()+'/data/'+location['name']+"-subnets.json", 'r') as f:
-                tmp = json.load(f)
+            print("Loading",location['name']+"-subnets.csv")
+            with open(os.getcwd()+'/data/'+location['name']+"-subnets.csv", 'r') as f:
+                file = f.read()
+            tmp = csvToDict(file)
             for line in tmp.items():
                 if line[1] == "retry":
                     notPingable.append(line[0])
@@ -229,6 +244,10 @@ class Geolocator:
         self.loadPingable()
         self.notPingable = self.SubnetsToRandomIP(notPingable)
         notPingable = ""
+
+        run = self.checkFiles("update")
+
         for location in self.locations:
-            p = Process(target=self.fpingLocation, args=([location,True]))
-            p.start()
+            if len(run) > 0 and location['name'] in run:
+                p = Process(target=self.fpingLocation, args=([location,True]))
+                p.start()
