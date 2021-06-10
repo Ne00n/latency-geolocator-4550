@@ -124,13 +124,12 @@ class Geolocator:
             latency = self.getAvrg(result[1])
             subnets = self.mapToSubnet(latency)
             if update is False:
-                print(location['name'],"Updating",location['name']+"-subnets.json")
-                if os.path.exists(os.getcwd()+'/data/'+location['name']+"-subnets.json"):
-                    with open(os.getcwd()+'/data/'+location['name']+"-subnets.json", 'r') as f:
-                        subnetsOld = json.load(f)
-                    subnets = {**subnets, **subnetsOld}
-                with open(os.getcwd()+'/data/'+location['name']+"-subnets.json", 'w') as f:
-                    json.dump(subnets, f)
+                print(location['name'],"Updating",location['name']+"-subnets.csv")
+                csv = ""
+                for line in subnets.items():
+                    csv += line[0]+","+line[1]+"\n"
+                with open(os.getcwd()+'/data/'+location['name']+"-subnets.csv", "a") as f:
+                    f.write(csv)
             else:
                 print(location['name'],"Merging",location['name']+"-subnets.json")
                 with open(os.getcwd()+'/data/'+location['name']+"-subnets.json", 'r') as f:
