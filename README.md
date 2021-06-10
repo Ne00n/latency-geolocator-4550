@@ -45,7 +45,7 @@ Be warned, the memory usage will be up to 5 times the masscan .json file size!<b
 ```
 python3 geolocator.py geolocate
 ```
-This process is threaded, independent how many locations you have, it will likely take 3 hours<br />
+This process is threaded, independent how many locations you have, it will likely take 3-4 hours<br />
 
 3. Corrector, Applying some magic
 ```
