@@ -154,18 +154,18 @@ class Geolocator:
 
         run = {}
         for location in self.locations:
-            if os.path.exists(os.getcwd()+'/data/'+location['name']+"-subnets.json"):
-                answer = input(location['name']+"-subnets.json already exists. Do you want to rebuild? (y/n): ")
+            if os.path.exists(os.getcwd()+'/data/'+location['name']+"-subnets.csv"):
+                answer = input(location['name']+"-subnets.csv already exists. Do you want to rebuild? (y/n): ")
                 if answer != "y": continue
                 run[location['name']] = "y"
                 print(location['name'],"backing up existing file")
-                if os.path.exists(os.getcwd()+'/data/'+location['name']+"-subnets.json.bak"):
-                    answer = input(location['name']+"-subnets.json.bak already exists. Override? (y/n): ")
+                if os.path.exists(os.getcwd()+'/data/'+location['name']+"-subnets.csv.bak"):
+                    answer = input(location['name']+"-subnets.csv.bak already exists. Override? (y/n): ")
                     if answer == "y":
-                        copyfile(os.getcwd()+'/data/'+location['name']+"-subnets.json", os.getcwd()+'/data/'+location['name']+"-subnets.json.bak")
+                        copyfile(os.getcwd()+'/data/'+location['name']+"-subnets.csv", os.getcwd()+'/data/'+location['name']+"-subnets.csv.bak")
                 else:
-                    copyfile(os.getcwd()+'/data/'+location['name']+"-subnets.json", os.getcwd()+'/data/'+location['name']+"-subnets.json.bak")
-                os.remove((os.getcwd()+'/data/'+location['name']+"-subnets.json"))
+                    copyfile(os.getcwd()+'/data/'+location['name']+"-subnets.csv", os.getcwd()+'/data/'+location['name']+"-subnets.csv.bak")
+                os.remove((os.getcwd()+'/data/'+location['name']+"-subnets.csv"))
             else:
                 run[location['name']] = "y"
 
