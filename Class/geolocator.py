@@ -181,9 +181,13 @@ class Geolocator:
             asn = f.read()
         subnets,routing = {},{}
         for location in self.locations:
-            print("Loading",location['name']+"-subnets.json")
-            with open(os.getcwd()+'/data/'+location['name']+"-subnets.json", 'r') as f:
-                subnets[location['name']] = json.load(f)
+            with open(os.getcwd()+'/data/'+location['name']+"-subnets.csv", 'r') as f:
+                file = f.read()
+            dict = {}
+            for row in file.splitlines():
+                line = row.split(",")
+                dict[line[0]] = line[1]
+            subnets[location['name']] = dict
         lines = asn.splitlines()
         for line in lines:
             data = line.split("\t")
