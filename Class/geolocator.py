@@ -127,7 +127,7 @@ class Geolocator:
                 print(location['name'],"Updating",location['name']+"-subnets.csv")
                 csv = ""
                 for line in subnets.items():
-                    csv += line[0]+","+line[1]+"\n"
+                    csv += str(line[0])+","+str(line[1])+"\n"
                 with open(os.getcwd()+'/data/'+location['name']+"-subnets.csv", "a") as f:
                     f.write(csv)
             else:
