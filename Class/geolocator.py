@@ -117,6 +117,12 @@ class Geolocator:
             dict[line[0]] = line[1]
         return dict
 
+    def dictToCsv(self,dict):
+        csv = ""
+        for line in dict.items():
+            csv += str(line[0])+","+str(line[1])+"\n"
+        return csv
+
     def fpingLocation(self,location,update=False):
         row = 0
         length = len(self.pingable)
@@ -133,22 +139,21 @@ class Geolocator:
             subnets = self.mapToSubnet(latency)
             if update is False:
                 print(location['name'],"Updating",location['name']+"-subnets.csv")
-                csv = ""
-                for line in subnets.items():
-                    csv += str(line[0])+","+str(line[1])+"\n"
+                csv = self.dictToCsv(subnets)
                 with open(os.getcwd()+'/data/'+location['name']+"-subnets.csv", "a") as f:
                     f.write(csv)
             else:
                 print(location['name'],"Merging",location['name']+"-subnets.csv")
                 with open(os.getcwd()+'/data/'+location['name']+"-subnets.csv", 'r') as f:
                     subnetsCurrentRaw = f.read()
-                subnetsCurrent = csvToDict(subnetsCurrentRaw)
+                subnetsCurrent = self.csvToDict(subnetsCurrentRaw)
                 subnetsCurrentRaw = ""
                 for line in subnetsCurrent.items():
-                    subnetsCurrent[line[0]] = line
+                    subnetsCurrent[line[0]] = line[1]
                 print(location['name'],"Saving",location['name']+"-subnets.csv")
+                csv = self.dictToCsv(subnetsCurrent)
                 with open(os.getcwd()+'/data/'+location['name']+"-subnets.csv", "w") as f:
-                    f.write(subnetsCurrent)
+                    f.write(csv)
             row += 1000
             currentLoop = int(datetime.now().timestamp())
             print(location['name'],"Done",row,"of",length)
@@ -236,7 +241,7 @@ class Geolocator:
             print("Loading",location['name']+"-subnets.csv")
             with open(os.getcwd()+'/data/'+location['name']+"-subnets.csv", 'r') as f:
                 file = f.read()
-            tmp = csvToDict(file)
+            tmp = self.csvToDict(file)
             for line in tmp.items():
                 if line[1] == "retry":
                     notPingable.append(line[0])
@@ -245,6 +250,7 @@ class Geolocator:
         self.notPingable = self.SubnetsToRandomIP(notPingable)
         notPingable = ""
 
+        print("Found",len(self.notPingable),"subnets")
         run = self.checkFiles("update")
 
         for location in self.locations:
