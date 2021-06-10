@@ -181,6 +181,7 @@ class Geolocator:
             asn = f.read()
         subnets,routing = {},{}
         for location in self.locations:
+            print("Loading",location['name']+"-subnets.csv")
             with open(os.getcwd()+'/data/'+location['name']+"-subnets.csv", 'r') as f:
                 file = f.read()
             dict = {}
@@ -208,6 +209,7 @@ class Geolocator:
                 else:
                     print("Could not find",data[0],"in",location['name'])
         export = ""
+        print("Saving","db.conf")
         for row in routing.items():
             export += row[0]+" => "+row[1]['datacenter']+"\n"
         with open(os.getcwd()+'/data/dc.conf', 'w+') as out:
