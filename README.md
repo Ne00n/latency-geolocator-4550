@@ -47,11 +47,11 @@ python3 geolocator.py geolocate
 ```
 This process is threaded, independent how many locations you have, it will likely take 3-4 hours<br />
 
-3. Corrector, Applying some magic
+3. Optional: Corrector, Applying some magic
 ```
 python3 geolocator.py corrector
 ```
-- Seek and Destroy "retry"
+- Finds subnets with "retry" and pings them over a different IP
 
 4. Generate the [gdnsd](https://github.com/gdnsd/gdnsd) datacenter subnet mapping file
 ```
