@@ -163,7 +163,7 @@ class Geolocator:
             currentLoop = int(datetime.now().timestamp())
             print(location['name'],"Done",row,"of",length)
             diff = currentLoop - current
-            print(location['name'],"Finished in approximately",round(diff * ( (length - row) / 1000) / 60),"minutes")
+            print(location['name'],"Finished in approximately",round(diff * ( (length - row) / 1000) / 60),"minute(s)")
         print(location['name'],"Done")
 
     def checkFiles(self,type="rebuild"):
