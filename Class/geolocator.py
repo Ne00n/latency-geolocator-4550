@@ -1,7 +1,8 @@
-import subprocess, random, pyasn, time, json, sys, re, os
+import subprocess, ipaddress, random, pyasn, time, json, sys, re, os
 from multiprocessing import Process
 from datetime import datetime
 from shutil import copyfile
+import geoip2.database
 
 class Geolocator:
 
@@ -241,6 +242,11 @@ class Geolocator:
 
     def rerun(self,type="retry",latency=0):
         print("Rerun")
+        if os.path.exists(os.getcwd()+"/GeoLite2-Country.mmdb"):
+            print("Loading GeoLite2-Country.mmdb")
+            reader = geoip2.database.Reader(os.getcwd()+"/GeoLite2-Country.mmdb")
+        else:
+            print("Could not find GeoLite2-Country.mmdb")
         notPingable = []
         for location in self.locations:
             print("Loading",location['name']+"-subnets.csv")
@@ -252,6 +258,13 @@ class Geolocator:
                     notPingable.append(line[0])
                 if type == "latency" and line[1] != "retry" and float(line[1]) > float(latency):
                     notPingable.append(line[0])
+                if type == "geo" and line[1] != "retry" and float(line[1]) > float(latency):
+                    ip = re.sub(r'[0-9]+/[0-9]+', '1', line[0])
+                    try:
+                        response = reader.country(ip)
+                        if location['country'].upper() == response.country.iso_code: notPingable.append(line[0])
+                    except Exception as e:
+                        print("Skipping",line[0])
         notPingable,tmp = list(set(notPingable)),""
         self.loadPingable()
         self.notPingable = self.SubnetsToRandomIP(notPingable)
