@@ -49,7 +49,7 @@ This process is threaded, independent how many locations you have, it will likel
 
 3. Optional: Corrector, Applying some magic
 ```
-python3 geolocator.py corrector
+python3 geolocator.py rerun retry
 ```
 - Finds subnets with "retry" and pings them over a different IP
 

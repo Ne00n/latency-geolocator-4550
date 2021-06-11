@@ -239,7 +239,7 @@ class Geolocator:
         with open(os.getcwd()+'/data/dc.conf', 'w+') as out:
             out.write(export)
 
-    def corrector(self):
+    def rerun(self,type="retry",latency=0):
         print("Corrector")
         notPingable = []
         for location in self.locations:
@@ -248,7 +248,9 @@ class Geolocator:
                 file = f.read()
             tmp = self.csvToDict(file)
             for line in tmp.items():
-                if line[1] == "retry":
+                if type == "retry" and line[1] == "retry":
+                    notPingable.append(line[0])
+                if type == "latency" and line[1] != "retry" and line[1] > latency:
                     notPingable.append(line[0])
         notPingable,tmp = list(set(notPingable)),""
         self.loadPingable()
