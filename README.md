@@ -67,11 +67,11 @@ Rerun specific latency messurements on demand
 ```
 python3 geolocator.py rerun retry
 ```
-- Finds subnets with "retry" and pings them over a different IP
+- Finds subnets with "retry"
 ```
 python3 geolocator.py rerun latency 400
 ```
-- Ping all Subnets again with reported latency over 400
+- Subnets with reported latency over 400
 ```
 python3 geolocator.py rerun geo 100
 ```
