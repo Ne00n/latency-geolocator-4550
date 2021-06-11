@@ -3,3 +3,4 @@ asn.dat
 pingable.json
 locations.json
 config
+*.mmdb
