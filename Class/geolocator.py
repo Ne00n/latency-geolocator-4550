@@ -240,7 +240,7 @@ class Geolocator:
             out.write(export)
 
     def rerun(self,type="retry",latency=0):
-        print("Corrector")
+        print("Rerun")
         notPingable = []
         for location in self.locations:
             print("Loading",location['name']+"-subnets.csv")
@@ -250,7 +250,7 @@ class Geolocator:
             for line in tmp.items():
                 if type == "retry" and line[1] == "retry":
                     notPingable.append(line[0])
-                if type == "latency" and line[1] != "retry" and line[1] > latency:
+                if type == "latency" and line[1] != "retry" and float(line[1]) > float(latency):
                     notPingable.append(line[0])
         notPingable,tmp = list(set(notPingable)),""
         self.loadPingable()
@@ -258,6 +258,7 @@ class Geolocator:
         notPingable = ""
 
         print("Found",len(self.notPingable),"subnets")
+        if len(self.notPingable) == 0: return False
         run = self.checkFiles("update")
 
         for location in self.locations:

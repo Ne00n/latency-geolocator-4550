@@ -47,7 +47,7 @@ python3 geolocator.py geolocate
 ```
 This process is threaded, independent how many locations you have, it will likely take 3-4 hours<br />
 
-3. Optional: Corrector, Applying some magic
+3. Optional: Rerun, Applying some magic
 ```
 python3 geolocator.py rerun retry
 ```
