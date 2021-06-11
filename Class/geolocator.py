@@ -1,4 +1,4 @@
-import subprocess, ipaddress, random, pyasn, time, json, sys, re, os
+import subprocess, ipaddress, random, pyasn, sqlite3, time, json, sys, re, os
 from multiprocessing import Process
 from datetime import datetime
 from shutil import copyfile
@@ -6,7 +6,8 @@ import geoip2.database
 
 class Geolocator:
 
-    masscanDir,locations,pingable,asndb,notPingable = "","","","",""
+    masscanDir,locations,asndb,notPingable,pingableLength = "","","","",0
+    connection = sqlite3.connect("file:subnets?mode=memory&cache=shared", uri=True)
 
     def __init__(self,masscanDir="/masscan/"):
         print("Loading asn.dat")
@@ -19,7 +20,19 @@ class Geolocator:
     def loadPingable(self):
         print("Loading pingable.json")
         with open(os.getcwd()+"/pingable.json", 'r') as f:
-            self.pingable = json.load(f)
+            pingable = json.load(f)
+        self.pingableLength = len(pingable)
+        print("Offloading pingable.json into SQLite Database")
+        self.connection.execute("""CREATE TABLE subnets (subnet, ips)""")
+        for row in pingable.items():
+            self.connection.execute("INSERT INTO subnets VALUES ('"+row[0]+"', '"+','.join(row[1])+"')")
+        self.connection.commit()
+
+    def getIPsFromSubnet(self,subnet,start=0,end=0):
+        if start != 0 or end != 0:
+            return list(self.connection.execute("SELECT * FROM subnets LIMIT ?,?",(start,end)))
+        else:
+            return list(self.connection.execute("SELECT * FROM subnets WHERE subnet=?", (subnet,)))
 
     def cmd(self,cmd):
         p = subprocess.run(cmd, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
@@ -76,13 +89,11 @@ class Geolocator:
             json.dump(list, f)
 
     def getIPs(self,row,length=1000):
-        list,current,count = [],0,0
-        for subnet,ips in self.pingable.items():
-            current += 1
-            if current >= row:
-                list.append(ips[0])
-                count += 1
-            if count == length: return list
+        list = []
+        pingable = self.getIPsFromSubnet("",row,length)
+        for row in pingable:
+            ips = row[1].split(",")
+            list.append(ips[0])
         return list
 
     def SliceAndDice(self,notPingable,row):
@@ -95,8 +106,9 @@ class Geolocator:
     def SubnetsToRandomIP(self,list):
         ips = []
         for subnet in list:
-            if subnet in self.pingable:
-                ips.append(random.choice(self.pingable[subnet]))
+            request = self.getIPsFromSubnet(subnet)
+            if not request:
+                ips.append(random.choice(request[1]))
         return ips
 
     def getAvrg(self,result):
@@ -130,8 +142,7 @@ class Geolocator:
         return csv
 
     def fpingLocation(self,location,update=False):
-        row = 0
-        length = len(self.pingable)
+        length,row = self.pingableLength,0
         if update: length = len(self.notPingable)
         while row < length:
             if update is False: ips = self.getIPs(row)
@@ -190,7 +201,7 @@ class Geolocator:
     def geolocate(self):
         print("Geolocate")
         self.loadPingable()
-        print("Got",str(len(self.pingable)),"subnets")
+        print("Got",str(self.pingableLength),"subnets")
 
         run = self.checkFiles()
 
