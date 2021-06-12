@@ -5,6 +5,7 @@ geodns databases are from the past, we gonna build our own with Blackjack and Ho
 **Dependencies**<br />
 ```
 pip3 install pyasn
+pip3 install netaddr
 pip3 install geoip2
 ```
 Wot, you install maxmind geoip, BETRAYAL!
