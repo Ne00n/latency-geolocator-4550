@@ -33,7 +33,7 @@ pyasn_util_convert.py --single rib.2021* asn.dat
 ```
 You may need run beforehand
 ```
-apt-get install gcc python3-dev
+apt-get install python-dev build-essential
 ```
 
 **Usage**<br />
