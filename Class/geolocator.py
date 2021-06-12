@@ -191,11 +191,15 @@ class Geolocator:
         print(location['name'],"Done")
 
     def checkFiles(self,type="rebuild"):
-        run = {}
+        run,yall = {},False
         for location in self.locations:
             if os.path.exists(os.getcwd()+'/data/'+location['name']+"-subnets.csv"):
-                answer = input(location['name']+"-subnets.csv already exists. Do you want to "+type+"? (y/n): ")
-                if answer != "y": continue
+                if yall == False:
+                    answer = input(location['name']+"-subnets.csv already exists. Do you want to "+type+"? (y/n): ")
+                else:
+                    answer = "yall"
+                if answer != "y" and answer != "yall": continue
+                if answer == "yall": yall = True
                 run[location['name']] = "y"
                 print(location['name'],"backing up existing file")
                 if os.path.exists(os.getcwd()+'/data/'+location['name']+"-subnets.csv.bak"):
