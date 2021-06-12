@@ -1,5 +1,6 @@
-import subprocess, ipaddress, random, pyasn, sqlite3, time, json, sys, re, os
+import subprocess, ipaddress, random, pyasn, sqlite3, netaddr, time, json, sys, re, os
 from datetime import datetime
+from netaddr import IPNetwork
 from threading import Thread
 from shutil import copyfile
 import geoip2.database
@@ -59,10 +60,10 @@ class Geolocator:
             else:
                 print("Not found in",location['name'])
 
-    def masscan(self):
+    def masscan(self,routing=False):
         print("Generating json")
         files = os.listdir(self.masscanDir)
-        list = {}
+        list,networks,networkCache = {},{},{}
         for file in files:
             if ".json" in file:
                 print("Loading",file)
@@ -81,11 +82,31 @@ class Geolocator:
                 for line in dumpJson:
                     if line['ports'][0]['status'] != "open": continue
                     lookup = self.asndb.lookup(line['ip'])
+                    if lookup[0] == None:
+                        print("Network not found, skipping",line['ip'])
+                        continue
+                    subnet = lookup[1].split("/")
+                    if int(subnet[1]) <= 24 and routing is True and lookup[1] in networkCache:
+                        networklist = networkCache[lookup[1]]
+                    if int(subnet[1]) <= 24 and routing is True and lookup[1] not in networkCache:
+                        networkRaw = netaddr.IPNetwork(lookup[1])
+                        networklist = [str(sn) for sn in networkRaw.subnet(24)]
+                        networkCache[lookup[1]] = networklist
                     if lookup[1] not in list:
                         list[lookup[1]] = []
                         list[lookup[1]].append(line['ip'])
                     else:
-                        if len(list[lookup[1]]) < 50: list[lookup[1]].append(line['ip'])
+                        if int(subnet[1]) <= 24 and routing is True:
+                            ip = re.sub(r'[0-9]+/[0-9]+', '1', line['ip'])
+                            for network in networklist:
+                                if ipaddress.IPv4Address(line['ip']) in ipaddress.IPv4Network(network):
+                                    if network not in networks: networks[network] = 1;
+                                    if networks[network] < 25:
+                                        list[lookup[1]].append(line['ip'])
+                                        networks[network] += 1
+                                        break
+                        else:
+                            if len(list[lookup[1]]) < 25: list[lookup[1]].append(line['ip'])
                 dumpJson = ""
         print("Saving","pingable.json")
         with open(os.getcwd()+'/pingable.json', 'w') as f:
