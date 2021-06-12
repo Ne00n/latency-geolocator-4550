@@ -1,6 +1,6 @@
 import subprocess, ipaddress, random, pyasn, sqlite3, time, json, sys, re, os
-from multiprocessing import Process
 from datetime import datetime
+from threading import Thread
 from shutil import copyfile
 import geoip2.database
 
@@ -28,11 +28,14 @@ class Geolocator:
             self.connection.execute("INSERT INTO subnets VALUES ('"+row[0]+"', '"+','.join(row[1])+"')")
         self.connection.commit()
 
-    def getIPsFromSubnet(self,subnet,start=0,end=0):
+    def getIPsFromSubnet(self,connection,subnet,start=0,end=0):
         if start != 0 or end != 0:
-            return list(self.connection.execute("SELECT * FROM subnets LIMIT ?,?",(start,end)))
+            return list(connection.execute("SELECT * FROM subnets LIMIT ?,?",(start,end)))
         else:
-            return list(self.connection.execute("SELECT * FROM subnets WHERE subnet=?", (subnet,)))
+            return list(connection.execute("SELECT * FROM subnets WHERE subnet=?", (subnet,)))
+
+    def dumpDatabase(self):
+        return list(self.connection.execute("SELECT * FROM subnets"))
 
     def cmd(self,cmd):
         p = subprocess.run(cmd, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
@@ -88,9 +91,9 @@ class Geolocator:
         with open(os.getcwd()+'/pingable.json', 'w') as f:
             json.dump(list, f)
 
-    def getIPs(self,row,length=1000):
+    def getIPs(self,connection,row,length=1000):
         list = []
-        pingable = self.getIPsFromSubnet("",row,length)
+        pingable = self.getIPsFromSubnet(connection,"",row,length)
         for row in pingable:
             ips = row[1].split(",")
             list.append(ips[0])
@@ -105,10 +108,12 @@ class Geolocator:
 
     def SubnetsToRandomIP(self,list):
         ips = []
+        subnetsList = self.dumpDatabase()
+        subnets = self.listToDict(subnetsList)
         for subnet in list:
-            request = self.getIPsFromSubnet(subnet)
-            if not request:
-                ips.append(random.choice(request[1]))
+            if subnet in subnets:
+                ipaaaays = subnets[subnet].split(",")
+                ips.append(random.choice(ipaaaays))
         return ips
 
     def getAvrg(self,result):
@@ -141,11 +146,18 @@ class Geolocator:
             csv += str(line[0])+","+str(line[1])+"\n"
         return csv
 
+    def listToDict(self,list,index=0,data=1):
+        dict = {}
+        for row in list:
+            dict[row[index]] = row[data]
+        return dict
+
     def fpingLocation(self,location,update=False):
         length,row = self.pingableLength,0
+        connection = sqlite3.connect("file:subnets?mode=memory&cache=shared", uri=True)
         if update: length = len(self.notPingable)
         while row < length:
-            if update is False: ips = self.getIPs(row)
+            if update is False: ips = self.getIPs(connection,row)
             if update is True: ips = self.SliceAndDice(self.notPingable,row)
             current = int(datetime.now().timestamp())
             print(location['name'],"Running fping")
@@ -207,8 +219,9 @@ class Geolocator:
 
         for location in self.locations:
             if len(run) > 0 and location['name'] in run:
-                p = Process(target=self.fpingLocation, args=([location]))
-                p.start()
+                thread = Thread(target=self.fpingLocation, args=([location]))
+                thread.start()
+        thread.join()
 
     def generate(self):
         print("Generate")
@@ -278,6 +291,7 @@ class Geolocator:
                         print("Skipping",line[0])
         notPingable,tmp = list(set(notPingable)),""
         self.loadPingable()
+        print("Fetching Random IPs")
         self.notPingable = self.SubnetsToRandomIP(notPingable)
         notPingable = ""
 
@@ -287,5 +301,6 @@ class Geolocator:
 
         for location in self.locations:
             if len(run) > 0 and location['name'] in run:
-                p = Process(target=self.fpingLocation, args=([location,True]))
-                p.start()
+                thread = Thread(target=self.fpingLocation, args=([location,True]))
+                thread.start()
+        thread.join()
