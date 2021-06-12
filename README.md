@@ -5,7 +5,9 @@ geodns databases are from the past, we gonna build our own with Blackjack and Ho
 **Dependencies**<br />
 ```
 pip3 install pyasn
+pip3 install geoip2
 ```
+Wot, you install maxmind geoip, BETRAYAL!
 
 **masscan**<br />
 Example for running masscan (icmp/ping only)
@@ -45,8 +47,7 @@ Be warned, the memory usage will be up to 5 times the masscan .json file size!<b
 ```
 python3 geolocator.py geolocate
 ```
-This process is threaded, independent how many locations you have, it will likely take 3 hours<br />
-Each Thread will consume up to 1.5GB of Memory, make sure you are not going OOM
+This process is threaded, independent how many locations you have, it will likely take 3-4 hours<br />
 
 3. Generate the [gdnsd](https://github.com/gdnsd/gdnsd) datacenter subnet mapping file
 ```
@@ -60,3 +61,19 @@ cp myahcdn.net /etc/gdnsd/zones
 cp data/dc.conf /etc/gdnsd/geoip
 /etc/init.d/gdnsd restart
 ```
+
+**Optimization**<br />
+Rerun specific latency messurements on demand
+```
+python3 geolocator.py rerun retry
+```
+- Finds subnets with "retry"
+```
+python3 geolocator.py rerun latency 400
+```
+- Subnets with reported latency over 400
+```
+python3 geolocator.py rerun geo 100
+```
+- Subnet is geographically in the same country where you have a Server, which exceeds the latency of 100<br />
+- You need the [GeoLite2-Country.mmdb](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data) from maxmind for that

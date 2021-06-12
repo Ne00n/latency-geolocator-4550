@@ -1,2 +1,4 @@
 *.json
 *.conf
+*.bak
+*.csv
