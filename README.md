@@ -10,6 +10,11 @@ pip3 install geoip2
 ```
 Wot, you install maxmind geoip, BETRAYAL!
 
+You may need run beforehand
+```
+apt-get install python-dev build-essential
+```
+
 **masscan**<br />
 Example for running masscan (icmp/ping only)
 ```
@@ -30,10 +35,6 @@ Get latest routing table dump
 ```
 pyasn_util_download.py --latest
 pyasn_util_convert.py --single rib.2021* asn.dat
-```
-You may need run beforehand
-```
-apt-get install python-dev build-essential
 ```
 
 **Usage**<br />
