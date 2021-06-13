@@ -79,38 +79,25 @@ class Geolocator:
                 with open(self.masscanDir+"tmp"+file, 'r') as f:
                     dumpJson = json.load(f)
                 os.remove(self.masscanDir+"tmp"+file)
+                print("Building list")
                 for line in dumpJson:
                     if line['ports'][0]['status'] != "open": continue
                     lookup = self.asndb.lookup(line['ip'])
                     if lookup[0] == None:
-                        print("Network not found, skipping",line['ip'])
+                        print("IP not found in asn.dat",line['ip'])
                         continue
                     if lookup[1] not in list:
                         list[lookup[1]] = []
                         list[lookup[1]].append(line['ip'])
                         continue
-                    subnet = lookup[1].split("/")
-                    cached = False
-                    if int(subnet[1]) <= 20 and routing is True and lookup[1] in networkCache:
-                        networklist = networkCache[lookup[1]]
-                        cached = True
-                    if int(subnet[1]) <= 20 and routing is True and cached == False:
-                        networkRaw = netaddr.IPNetwork(lookup[1])
-                        networklist = [str(sn) for sn in networkRaw.subnet(21)]
-                        networkCache[lookup[1]] = networklist
-                    if int(subnet[1]) <= 20 and routing is True:
-                        an_address = ipaddress.ip_address(line['ip'])
-                        for network in networklist:
-                            a_network = ipaddress.ip_network(network)
-                            address_in_network = an_address in a_network
-                            if address_in_network:
-                                if network not in networks: networks[network] = 1;
-                                if networks[network] < 25:
-                                    list[lookup[1]].append(line['ip'])
-                                    networks[network] += 1
-                                    break
+                    list[lookup[1]].append(line['ip'])
+                print("Filtering list")
+                for subnet in list:
+                    network = subnet.split("/")
+                    if routing is False or int(network[1]) > 20:
+                        list[subnet] = list[subnet][:50]
                     else:
-                        if len(list[lookup[1]]) < 50: list[lookup[1]].append(line['ip'])
+                        list[subnet] = list[subnet][:2000]
                 dumpJson = ""
         print("Saving","pingable.json")
         with open(os.getcwd()+'/pingable.json', 'w') as f:
