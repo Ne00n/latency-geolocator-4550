@@ -1,4 +1,5 @@
 import subprocess, ipaddress, random, pyasn, sqlite3, netaddr, time, json, sys, re, os
+from multiprocessing import Process
 from datetime import datetime
 from netaddr import IPNetwork
 from threading import Thread
@@ -103,26 +104,26 @@ class Geolocator:
     def masscan(self,routing=False):
         print("Generating json")
         files = os.listdir(self.masscanDir)
-        filelist,threads,runs = [],[],1
+        filelist,processes,runs = [],[],1
         for file in files:
             if ".json" in file: filelist.append(file)
         print("Found",len(filelist),"file(s)")
         cores = int(len(os.sched_getaffinity(0)) / 2)
-        threadsCount = int(input("How many threads do you want? suggestion "+str(cores)+": "))
-        split = int(len(filelist) / threadsCount)
-        diff = len(filelist) - (split * threadsCount)
-        while runs <= threadsCount:
+        coreCount = int(input("How many processes do you want? suggestion "+str(cores)+": "))
+        split = int(len(filelist) / coreCount)
+        diff = len(filelist) - (split * coreCount)
+        while runs <= coreCount:
             list = filelist[ (runs -1) *split:( (runs -1) *split)+split]
             if runs == 1 and diff != 0: list.append(filelist[len(filelist)-diff:len(filelist)][0])
-            threads.append(Thread(target=self.masscanFiles, args=([list,runs,routing])))
+            processes.append(Process(target=self.masscanFiles, args=([list,runs,routing])))
             runs += 1
-        for thread in threads:
-            thread.start()
-        for thread in threads:
-            thread.join()
+        for process in processes:
+            process.start()
+        for process in processes:
+            process.join()
         print("Merging files")
         runs,pingable = 1,{}
-        while runs <= threadsCount:
+        while runs <= coreCount:
             print("Loading","tmp"+str(runs)+"-pingable.json")
             with open(os.getcwd()+'/tmp'+str(runs)+'-pingable.json', 'r') as f:
                 file = json.load(f)
@@ -271,11 +272,14 @@ class Geolocator:
 
         run = self.checkFiles()
 
+        threads = []
         for location in self.locations:
             if len(run) > 0 and location['name'] in run:
-                thread = Thread(target=self.fpingLocation, args=([location]))
-                thread.start()
-        thread.join()
+                threads.append(Thread(target=self.fpingLocation, args=([location])))
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
 
     def generate(self):
         print("Generate")
@@ -353,8 +357,11 @@ class Geolocator:
         if len(self.notPingable) == 0: return False
         run = self.checkFiles("update")
 
+        threads = []
         for location in self.locations:
             if len(run) > 0 and location['name'] in run:
-                thread = Thread(target=self.fpingLocation, args=([location,True]))
-                thread.start()
-        thread.join()
+                threads.append(Thread(target=self.fpingLocation, args=([location,True])))
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
