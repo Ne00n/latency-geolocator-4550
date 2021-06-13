@@ -63,7 +63,8 @@ class Geolocator:
     def masscan(self,routing=False):
         print("Generating json")
         files = os.listdir(self.masscanDir)
-        list,networks,networkCache = {},{},{}
+        print("Found",len(files),"files")
+        list,networks,networkCache,count = {},{},{},0
         for file in files:
             if ".json" in file:
                 print("Loading",file)
@@ -99,6 +100,8 @@ class Geolocator:
                     else:
                         list[subnet] = list[subnet][:2000]
                 dumpJson = ""
+            count += 1
+            print("Done",count,"of",len(files),"files")    
         print("Saving","pingable.json")
         with open(os.getcwd()+'/pingable.json', 'w') as f:
             json.dump(list, f)
