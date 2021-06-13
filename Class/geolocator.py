@@ -67,6 +67,7 @@ class Geolocator:
         list,networks,networkCache,count = {},{},{},0
         for file in files:
             if ".json" in file:
+                current = int(datetime.now().timestamp())
                 print("Loading",file)
                 with open(self.masscanDir+file, 'r') as f:
                     dump = f.read()
@@ -92,6 +93,7 @@ class Geolocator:
                         list[lookup[1]].append(line['ip'])
                         continue
                     list[lookup[1]].append(line['ip'])
+                dumpJson = ""
                 print("Filtering list")
                 for subnet in list:
                     network = subnet.split("/")
@@ -99,9 +101,10 @@ class Geolocator:
                         list[subnet] = list[subnet][:50]
                     else:
                         list[subnet] = list[subnet][:2000]
-                dumpJson = ""
+                diff = int(datetime.now().timestamp()) - current
+                print("Finished in approximately",round(diff *  (len(files) - count) / 60),"minute(s)")
             count += 1
-            print("Done",count,"of",len(files),"files")    
+            print("Done",count,"of",len(files),"files")
         print("Saving","pingable.json")
         with open(os.getcwd()+'/pingable.json', 'w') as f:
             json.dump(list, f)
@@ -172,9 +175,9 @@ class Geolocator:
         connection = sqlite3.connect("file:subnets?mode=memory&cache=shared", uri=True)
         if update: length = len(self.notPingable)
         while row < length:
+            current = int(datetime.now().timestamp())
             if update is False: ips = self.getIPs(connection,row)
             if update is True: ips = self.SliceAndDice(self.notPingable,row)
-            current = int(datetime.now().timestamp())
             print(location['name'],"Running fping")
             cmd = "ssh root@"+location['ip']+" fping -c2 "
             cmd += " ".join(ips)
@@ -199,9 +202,8 @@ class Geolocator:
                 with open(os.getcwd()+'/data/'+location['name']+"-subnets.csv", "w") as f:
                     f.write(csv)
             row += 1000
-            currentLoop = int(datetime.now().timestamp())
             print(location['name'],"Done",row,"of",length)
-            diff = currentLoop - current
+            diff = int(datetime.now().timestamp()) - current
             print(location['name'],"Finished in approximately",round(diff * ( (length - row) / 1000) / 60),"minute(s)")
         print(location['name'],"Done")
 
