@@ -4,3 +4,4 @@ pingable.json
 locations.json
 config
 *.mmdb
+tmp*

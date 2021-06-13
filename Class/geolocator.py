@@ -60,56 +60,86 @@ class Geolocator:
             else:
                 print("Not found in",location['name'])
 
+    def masscanFiles(self,files,thread,routing=False):
+        list = {}
+        for file in files:
+            print("Thread "+str(thread),"Loading",file)
+            with open(self.masscanDir+file, 'r') as f:
+                dump = f.read()
+            print("Thread "+str(thread),"Modifying",file)
+            dump = re.sub(r'\[\s,', '[', dump)
+            dump = dump+"]"
+            with open(self.masscanDir+"tmp"+file, 'a') as out:
+                out.write(dump)
+            print("Thread "+str(thread),"Parsing",file)
+            with open(self.masscanDir+"tmp"+file, 'r') as f:
+                dumpJson = json.load(f)
+            os.remove(self.masscanDir+"tmp"+file)
+            print("Thread "+str(thread),"Building list")
+            for line in dumpJson:
+                if line['ports'][0]['status'] != "open": continue
+                lookup = self.asndb.lookup(line['ip'])
+                if lookup[0] == None:
+                    print("Thread "+str(thread),"IP not found in asn.dat",line['ip'])
+                    continue
+                if lookup[1] not in list:
+                    list[lookup[1]] = []
+                    list[lookup[1]].append(line['ip'])
+                    continue
+                list[lookup[1]].append(line['ip'])
+            print("Thread "+str(thread),"Filtering list")
+            for subnet in list:
+                network = subnet.split("/")
+                if routing is False or int(network[1]) > 20:
+                    if len(list[subnet]) < 50: continue
+                    list[subnet] = list[subnet][:50]
+                else:
+                    if len(list[subnet]) < int(2000/thread): continue
+                    list[subnet] = list[subnet][:int(2000/thread)]
+        print("Thread "+str(thread),"Done, saving file",'tmp'+str(thread)+'-pingable.json')
+        with open(os.getcwd()+'/tmp'+str(thread)+'-pingable.json', 'w') as f:
+            json.dump(list, f)
+
     def masscan(self,routing=False):
         print("Generating json")
         files = os.listdir(self.masscanDir)
-        print("Found",len(files),"files")
-        list,networks,networkCache,count = {},{},{},0
+        filelist,runs = [],0
         for file in files:
-            if ".json" in file:
-                current = int(datetime.now().timestamp())
-                print("Loading",file)
-                with open(self.masscanDir+file, 'r') as f:
-                    dump = f.read()
-                print("Modifying",file)
-                dump = re.sub(r'\[\s,', '[', dump)
-                dump = dump+"]"
-                with open(self.masscanDir+"tmp"+file, 'a') as out:
-                    out.write(dump)
-                dump = ""
-                print("Parsing",file)
-                with open(self.masscanDir+"tmp"+file, 'r') as f:
-                    dumpJson = json.load(f)
-                os.remove(self.masscanDir+"tmp"+file)
-                print("Building list")
-                for line in dumpJson:
-                    if line['ports'][0]['status'] != "open": continue
-                    lookup = self.asndb.lookup(line['ip'])
-                    if lookup[0] == None:
-                        print("IP not found in asn.dat",line['ip'])
-                        continue
-                    if lookup[1] not in list:
-                        list[lookup[1]] = []
-                        list[lookup[1]].append(line['ip'])
-                        continue
-                    list[lookup[1]].append(line['ip'])
-                dumpJson = ""
-                print("Filtering list")
-                for subnet in list:
-                    network = subnet.split("/")
-                    if routing is False or int(network[1]) > 20:
-                        if len(list[subnet]) < 50: continue
-                        list[subnet] = list[subnet][:50]
-                    else:
-                        if len(list[subnet]) < 2000: continue
-                        list[subnet] = list[subnet][:2000]
-                diff = int(datetime.now().timestamp()) - current
-                print("Finished in approximately",round(diff *  (len(files) - count) / 60),"minute(s)")
-            count += 1
-            print("Done",count,"of",len(files),"files")
+            if ".json" in file: filelist.append(file)
+        print("Found",len(filelist),"file(s)")
+        cores = int(len(os.sched_getaffinity(0)) / 2)
+        threads = int(input("How many threads do you want? suggestion "+str(cores)+": "))
+        split = int(len(filelist) / threads)
+        diff = len(filelist) - (split * threads)
+        while runs < threads:
+            list = filelist[runs*split:(runs*split)+split]
+            if runs == 0 and diff != 0: list.append(filelist[len(filelist)-diff:len(filelist)][0])
+            thread = Thread(target=self.masscanFiles, args=([list,runs,routing]))
+            thread.start()
+            runs += 1
+        thread.join()
+        print("Merging files")
+        time.sleep(3)
+        runs,pingable = 0,{}
+        while runs < threads:
+            print("Loading","tmp"+str(runs)+"-pingable.json")
+            with open(os.getcwd()+'/tmp'+str(runs)+'-pingable.json', 'r') as f:
+                file = json.load(f)
+                pingable = {**pingable, **file}
+                os.remove(os.getcwd()+'/tmp'+str(runs)+'-pingable.json')
+            runs  += 1
+        print("Filtering list")
+        for subnet in pingable:
+            network = subnet.split("/")
+            if routing is False or int(network[1]) > 20:
+                if len(pingable[subnet]) < 50: continue
+                pingable[subnet] = pingable[subnet][:50]
+            else:
+                if len(pingable[subnet]) < 2000: continue
+                pingable[subnet] = pingable[subnet][:2000]
         print("Saving","pingable.json")
         with open(os.getcwd()+'/pingable.json', 'w') as f:
-            json.dump(list, f)
+            json.dump(pingable, f)
 
     def getIPs(self,connection,row,length=1000):
         list = []
