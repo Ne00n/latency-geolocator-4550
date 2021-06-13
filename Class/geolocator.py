@@ -98,8 +98,10 @@ class Geolocator:
                 for subnet in list:
                     network = subnet.split("/")
                     if routing is False or int(network[1]) > 20:
+                        if len(list[subnet]) < 50: continue
                         list[subnet] = list[subnet][:50]
                     else:
+                        if len(list[subnet]) < 2000: continue
                         list[subnet] = list[subnet][:2000]
                 diff = int(datetime.now().timestamp()) - current
                 print("Finished in approximately",round(diff *  (len(files) - count) / 60),"minute(s)")
