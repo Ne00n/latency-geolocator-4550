@@ -103,25 +103,26 @@ class Geolocator:
     def masscan(self,routing=False):
         print("Generating json")
         files = os.listdir(self.masscanDir)
-        filelist,runs = [],0
+        filelist,threads,runs = [],[],1
         for file in files:
             if ".json" in file: filelist.append(file)
         print("Found",len(filelist),"file(s)")
         cores = int(len(os.sched_getaffinity(0)) / 2)
-        threads = int(input("How many threads do you want? suggestion "+str(cores)+": "))
-        split = int(len(filelist) / threads)
-        diff = len(filelist) - (split * threads)
-        while runs < threads:
-            list = filelist[runs*split:(runs*split)+split]
-            if runs == 0 and diff != 0: list.append(filelist[len(filelist)-diff:len(filelist)][0])
-            thread = Thread(target=self.masscanFiles, args=([list,runs,routing]))
-            thread.start()
+        threadsCount = int(input("How many threads do you want? suggestion "+str(cores)+": "))
+        split = int(len(filelist) / threadsCount)
+        diff = len(filelist) - (split * threadsCount)
+        while runs <= threadsCount:
+            list = filelist[ (runs -1) *split:( (runs -1) *split)+split]
+            if runs == 1 and diff != 0: list.append(filelist[len(filelist)-diff:len(filelist)][0])
+            threads.append(Thread(target=self.masscanFiles, args=([list,runs,routing])))
             runs += 1
-        thread.join()
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
         print("Merging files")
-        time.sleep(3)
-        runs,pingable = 0,{}
-        while runs < threads:
+        runs,pingable = 1,{}
+        while runs <= threadsCount:
             print("Loading","tmp"+str(runs)+"-pingable.json")
             with open(os.getcwd()+'/tmp'+str(runs)+'-pingable.json', 'r') as f:
                 file = json.load(f)
