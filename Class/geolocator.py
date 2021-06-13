@@ -85,28 +85,32 @@ class Geolocator:
                     if lookup[0] == None:
                         print("Network not found, skipping",line['ip'])
                         continue
-                    subnet = lookup[1].split("/")
-                    if int(subnet[1]) <= 24 and routing is True and lookup[1] in networkCache:
-                        networklist = networkCache[lookup[1]]
-                    if int(subnet[1]) <= 24 and routing is True and lookup[1] not in networkCache:
-                        networkRaw = netaddr.IPNetwork(lookup[1])
-                        networklist = [str(sn) for sn in networkRaw.subnet(24)]
-                        networkCache[lookup[1]] = networklist
                     if lookup[1] not in list:
                         list[lookup[1]] = []
                         list[lookup[1]].append(line['ip'])
+                        continue
+                    subnet = lookup[1].split("/")
+                    cached = False
+                    if int(subnet[1]) <= 20 and routing is True and lookup[1] in networkCache:
+                        networklist = networkCache[lookup[1]]
+                        cached = True
+                    if int(subnet[1]) <= 20 and routing is True and cached == False:
+                        networkRaw = netaddr.IPNetwork(lookup[1])
+                        networklist = [str(sn) for sn in networkRaw.subnet(21)]
+                        networkCache[lookup[1]] = networklist
+                    if int(subnet[1]) <= 20 and routing is True:
+                        an_address = ipaddress.ip_address(line['ip'])
+                        for network in networklist:
+                            a_network = ipaddress.ip_network(network)
+                            address_in_network = an_address in a_network
+                            if address_in_network:
+                                if network not in networks: networks[network] = 1;
+                                if networks[network] < 25:
+                                    list[lookup[1]].append(line['ip'])
+                                    networks[network] += 1
+                                    break
                     else:
-                        if int(subnet[1]) <= 24 and routing is True:
-                            ip = re.sub(r'[0-9]+/[0-9]+', '1', line['ip'])
-                            for network in networklist:
-                                if ipaddress.IPv4Address(line['ip']) in ipaddress.IPv4Network(network):
-                                    if network not in networks: networks[network] = 1;
-                                    if networks[network] < 25:
-                                        list[lookup[1]].append(line['ip'])
-                                        networks[network] += 1
-                                        break
-                        else:
-                            if len(list[lookup[1]]) < 25: list[lookup[1]].append(line['ip'])
+                        if len(list[lookup[1]]) < 50: list[lookup[1]].append(line['ip'])
                 dumpJson = ""
         print("Saving","pingable.json")
         with open(os.getcwd()+'/pingable.json', 'w') as f:
