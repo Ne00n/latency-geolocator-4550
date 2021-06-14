@@ -371,7 +371,7 @@ class Geolocator:
 
     def routingWorker(self,queue,outQueue):
         sus = {}
-        sus['ips'] = []
+        sus['networks'],sus['subnet'],sus['ips'] = {},[],[]
         while queue.qsize() > 0 :
             subnet = queue.get()
             print(subnet)
@@ -384,12 +384,14 @@ class Geolocator:
             networklist = [str(sn) for sn in network.subnet(21)]
             for net in networklist:
                 for ip in ips:
-                    if not subnet in sus: sus[subnet] = {}
-                    if net in sus[subnet]: continue
+                    if net in sus['subnet']: continue
                     if ipaddress.IPv4Address(ip) in ipaddress.IPv4Network(net):
                         sus['ips'].append(ip)
-                        sus[subnet][net] = {}
-                        sus[subnet][net][ip] = "pending"
+                        sus['networks'][ip] = {}
+                        sus['networks'][ip]['latency'] = 0
+                        sus['networks'][ip]['subnet'] = net
+                        sus['networks'][ip]['network'] = subnet
+                        sus['subnet'].append(net)
                         ips.remove(ip)
         print("Worker closed")
         outQueue.put(sus)
@@ -429,9 +431,8 @@ class Geolocator:
         print("Found",len(subnetsFilter),"subnets")
         self.loadPingable()
         for network,prefix in subnetsFilter.items():
-            if network == "35.240.0.0":
-                subnet = network+"/"+str(prefix)
-                queue.put(subnet)
+            subnet = network+"/"+str(prefix)
+            queue.put(subnet)
         coreCount = int(input("How many processes do you want? suggestion "+str(int(len(os.sched_getaffinity(0)) / 2))+": "))
         self.routingLunch(queue,outQueue,coreCount)
         map = {}
@@ -441,4 +442,26 @@ class Geolocator:
         self.pingableLength = len(map['ips'])
         self.notPingable = map['ips']
         results = self.fpingLocation(self.locations[0],False,True)
-        print(results)
+        del map['ips']
+        del map['subnet']
+        for ip,latency in results.items():
+            map['networks'][ip]['latency'] = latency
+        del results
+        data = {}
+        for ip,row in map['networks'].items():
+            if row['network'] not in data: data[row['network']] = {}
+            data[row['network']][ip] = {}
+            data[row['network']][ip]['latency'] = row['latency']
+            data[row['network']][ip]['subnet'] = row['subnet']
+        del map
+        networks = []
+        for network,ips in data.items():
+            initial,flagged = 0,False
+            for ip,latency in ips.items():
+                if latency['latency'] == "retry": continue
+                if initial == 0: initial = float(latency['latency'])
+                if float(latency['latency']) > (initial + 20) or float(latency['latency']) < (initial - 20): flagged = True
+            if flagged: networks.append(network)
+        print("Saving","networks.json")
+        with open(os.getcwd()+'/networks.json', 'w') as f:
+            json.dump(networks, f)
