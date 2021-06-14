@@ -1,5 +1,5 @@
 import subprocess, ipaddress, random, pyasn, sqlite3, netaddr, time, json, sys, re, os
-from multiprocessing import Process
+from multiprocessing import Process, Queue
 from datetime import datetime
 from netaddr import IPNetwork
 from threading import Thread
@@ -108,9 +108,8 @@ class Geolocator:
         for file in files:
             if ".json" in file: filelist.append(file)
         print("Found",len(filelist),"file(s)")
-        cores = int(len(os.sched_getaffinity(0)) / 2)
         print("Notice: Make sure you got 3GB+ memory available for each process")
-        coreCount = int(input("How many processes do you want? suggestion "+str(cores)+": "))
+        coreCount = int(input("How many processes do you want? suggestion "+str(int(len(os.sched_getaffinity(0)) / 2))+": "))
         split = int(len(filelist) / coreCount)
         diff = len(filelist) - (split * coreCount)
         while runs <= coreCount:
@@ -205,33 +204,35 @@ class Geolocator:
             dict[row[index]] = row[data]
         return dict
 
-    def fpingLocation(self,location,update=False):
-        length,row = self.pingableLength,0
+    def fpingLocation(self,location,update=False,routing=False):
+        length,row,map = self.pingableLength,0,{}
         connection = sqlite3.connect("file:subnets?mode=memory&cache=shared", uri=True)
         if update: length = len(self.notPingable)
         while row < length:
             current = int(datetime.now().timestamp())
-            if update is False: ips = self.getIPs(connection,row)
-            if update is True: ips = self.SliceAndDice(self.notPingable,row)
+            if update is False and routing is False: ips = self.getIPs(connection,row)
+            if update is True or routing is True: ips = self.SliceAndDice(self.notPingable,row)
             print(location['name'],"Running fping")
             cmd = "ssh root@"+location['ip']+" fping -c2 "
             cmd += " ".join(ips)
             result = self.cmd(cmd)
             latency = self.getAvrg(result[1])
             subnets = self.mapToSubnet(latency)
-            if update is False:
+            if routing is True:
+                map = {**map, **latency}
+            elif update is False:
                 print(location['name'],"Updating",location['name']+"-subnets.csv")
                 csv = self.dictToCsv(subnets)
                 with open(os.getcwd()+'/data/'+location['name']+"-subnets.csv", "a") as f:
                     f.write(csv)
-            else:
+            elif update is True:
                 print(location['name'],"Merging",location['name']+"-subnets.csv")
                 with open(os.getcwd()+'/data/'+location['name']+"-subnets.csv", 'r') as f:
                     subnetsCurrentRaw = f.read()
                 subnetsCurrent = self.csvToDict(subnetsCurrentRaw)
                 subnetsCurrentRaw = ""
-                for line in subnetsCurrent.items():
-                    subnetsCurrent[line[0]] = line[1]
+                for line in subnets.items():
+                    if line[1] != "retry": subnetsCurrent[line[0]] = line[1]
                 print(location['name'],"Saving",location['name']+"-subnets.csv")
                 csv = self.dictToCsv(subnetsCurrent)
                 with open(os.getcwd()+'/data/'+location['name']+"-subnets.csv", "w") as f:
@@ -241,6 +242,7 @@ class Geolocator:
             diff = int(datetime.now().timestamp()) - current
             print(location['name'],"Finished in approximately",round(diff * ( (length - row) / 1000) / 60),"minute(s)")
         print(location['name'],"Done")
+        if routing: return map
 
     def checkFiles(self,type="rebuild"):
         run,yall = {},False
@@ -366,3 +368,77 @@ class Geolocator:
             thread.start()
         for thread in threads:
             thread.join()
+
+    def routingWorker(self,queue,outQueue):
+        sus = {}
+        sus['ips'] = []
+        while queue.qsize() > 0 :
+            subnet = queue.get()
+            print(subnet)
+            ipsRaw = self.getIPsFromSubnet(self.connection,subnet)
+            if not ipsRaw:
+                print("No IPs found for",subnet)
+                continue
+            ips = ipsRaw[0][1].split(",")
+            network = netaddr.IPNetwork(subnet)
+            networklist = [str(sn) for sn in network.subnet(21)]
+            for net in networklist:
+                for ip in ips:
+                    if not subnet in sus: sus[subnet] = {}
+                    if net in sus[subnet]: continue
+                    if ipaddress.IPv4Address(ip) in ipaddress.IPv4Network(net):
+                        sus['ips'].append(ip)
+                        sus[subnet][net] = {}
+                        sus[subnet][net][ip] = "pending"
+                        ips.remove(ip)
+        print("Worker closed")
+        outQueue.put(sus)
+
+    def routingLunch(self,queue,outQueue,coreCount):
+        processes = [Process(target=self.routingWorker, args=(queue,outQueue,)) for _ in range(coreCount)]
+        for process in processes:
+            process.start()
+        for process in processes:
+            process.join()
+
+    def routing(self):
+        queue,outQueue = Queue(),Queue()
+        print("Routing")
+        print("Loading asn.dat")
+        with open(os.getcwd()+'/asn.dat', 'r') as f:
+            asn = f.read()
+        lines = asn.splitlines()
+        subnets = []
+        for line in lines:
+            data = line.split("\t")
+            if len(data) == 1: continue
+            net = data[0].split("/")
+            if int(net[1]) >= 14 and int(net[1]) <= 20: subnets.append(data[0])
+        print("Found",len(subnets),"subnets")
+        print("Filtering subnets")
+        subnetsFilter = {}
+        for subnet in subnets:
+            network = subnet.split("/")
+            if network[0] not in subnetsFilter:
+                network = subnet.split("/")
+                subnetsFilter[network[0]] = network[1]
+            else:
+                network = subnet.split("/")
+                if int(network[1]) < int(subnetsFilter[network[0]]):
+                    subnetsFilter[network[0]] = network[1]
+        print("Found",len(subnetsFilter),"subnets")
+        self.loadPingable()
+        for network,prefix in subnetsFilter.items():
+            if network == "35.240.0.0":
+                subnet = network+"/"+str(prefix)
+                queue.put(subnet)
+        coreCount = int(input("How many processes do you want? suggestion "+str(int(len(os.sched_getaffinity(0)) / 2))+": "))
+        self.routingLunch(queue,outQueue,coreCount)
+        map = {}
+        while not outQueue.empty():
+            map = {**map, **outQueue.get()}
+        random.shuffle(map['ips'])
+        self.pingableLength = len(map['ips'])
+        self.notPingable = map['ips']
+        results = self.fpingLocation(self.locations[0],False,True)
+        print(results)
