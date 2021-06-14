@@ -109,6 +109,7 @@ class Geolocator:
             if ".json" in file: filelist.append(file)
         print("Found",len(filelist),"file(s)")
         cores = int(len(os.sched_getaffinity(0)) / 2)
+        print("Notice: Make sure you got 3GB+ memory available for each process")
         coreCount = int(input("How many processes do you want? suggestion "+str(cores)+": "))
         split = int(len(filelist) / coreCount)
         diff = len(filelist) - (split * coreCount)
