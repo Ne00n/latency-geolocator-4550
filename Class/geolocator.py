@@ -417,20 +417,8 @@ class Geolocator:
             net = data[0].split("/")
             if int(net[1]) >= 14 and int(net[1]) <= 20: subnets.append(data[0])
         print("Found",len(subnets),"subnets")
-        print("Filtering subnets")
-        subnetsFilter = {}
-        for subnet in subnets:
-            network = subnet.split("/")
-            if network[0] not in subnetsFilter:
-                network = subnet.split("/")
-                subnetsFilter[network[0]] = network[1]
-            else:
-                network = subnet.split("/")
-                if int(network[1]) < int(subnetsFilter[network[0]]):
-                    subnetsFilter[network[0]] = network[1]
-        print("Found",len(subnetsFilter),"subnets")
         self.loadPingable()
-        for network,prefix in subnetsFilter.items():
+        for network,prefix in subnets.items():
             subnet = network+"/"+str(prefix)
             queue.put(subnet)
         coreCount = int(input("How many processes do you want? suggestion "+str(int(len(os.sched_getaffinity(0)) / 2))+": "))
