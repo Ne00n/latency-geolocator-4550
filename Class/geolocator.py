@@ -418,8 +418,7 @@ class Geolocator:
             if int(net[1]) >= 14 and int(net[1]) <= 20: subnets.append(data[0])
         print("Found",len(subnets),"subnets")
         self.loadPingable()
-        for network,prefix in subnets.items():
-            subnet = network+"/"+str(prefix)
+        for subnet in subnets:
             queue.put(subnet)
         coreCount = int(input("How many processes do you want? suggestion "+str(int(len(os.sched_getaffinity(0)) / 2))+": "))
         self.routingLunch(queue,outQueue,coreCount)
