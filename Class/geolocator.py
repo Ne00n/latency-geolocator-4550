@@ -158,14 +158,25 @@ class Geolocator:
             maximale = row + 1000
         return notPingable[row:maximale]
 
-    def SubnetsToRandomIP(self,list):
+    def SubnetsToRandomIP(self,list,networks):
         ips = []
         subnetsList = self.dumpDatabase()
         subnets = self.listToDict(subnetsList)
         for subnet in list:
             if subnet in subnets:
                 ipaaaays = subnets[subnet].split(",")
-                ips.append(random.choice(ipaaaays))
+                random.shuffle(ipaaaays)
+                if subnet in networks:
+                    subs = self.networkToSubs(subnet)
+                    ips.append(random.choice(ipaaaays))
+                    for sub in subs:
+                        for ip in ipaaaays:
+                            if ipaddress.IPv4Address(ip) in ipaddress.IPv4Network(sub):
+                                ips.append(ip)
+                                ipaaaays.remove(ip)
+                                break
+                else:
+                    ips.append(random.choice(ipaaaays))
         return ips
 
     def getAvrg(self,result):
@@ -178,12 +189,22 @@ class Geolocator:
                 latency[row[0]] = "retry"
         return latency
 
-    def mapToSubnet(self,latency):
+    def mapToSubnet(self,latency,networks,subnetCache):
         subnet = {}
         for ip, ms in latency.items():
             lookup = self.asndb.lookup(ip)
+            if lookup[1] not in networks:
+                subnet[lookup[1]] = ms
+                continue
+            if lookup[1] in subnetCache:
+                for sub in subnetCache[lookup[1]]:
+                    if ipaddress.IPv4Address(ip) in ipaddress.IPv4Network(sub):
+                        subnet[sub] = ms
+                        break
+                continue
+            subnetCache[lookup[1]] = self.networkToSubs(lookup[1])
             subnet[lookup[1]] = ms
-        return subnet
+        return subnet,subnetCache
 
     def csvToDict(self,csv):
         dict = {}
@@ -204,8 +225,8 @@ class Geolocator:
             dict[row[index]] = row[data]
         return dict
 
-    def fpingLocation(self,location,update=False,routing=False):
-        length,row,map = self.pingableLength,0,{}
+    def fpingLocation(self,location,update=False,routing=False,networks=[]):
+        subnetCache,length,row,map = {},self.pingableLength,0,{}
         connection = sqlite3.connect("file:subnets?mode=memory&cache=shared", uri=True)
         if update: length = len(self.notPingable)
         while row < length:
@@ -217,7 +238,7 @@ class Geolocator:
             cmd += " ".join(ips)
             result = self.cmd(cmd)
             latency = self.getAvrg(result[1])
-            subnets = self.mapToSubnet(latency)
+            subnets,subnetCache = self.mapToSubnet(latency,networks,subnetCache)
             if routing is True:
                 map = {**map, **latency}
             elif update is False:
@@ -352,8 +373,14 @@ class Geolocator:
                         print("Skipping",line[0])
         notPingable,tmp = list(set(notPingable)),""
         self.loadPingable()
+        if os.path.exists(os.getcwd()+'/networks.json'):
+            print("Loading networks.json")
+            with open(os.getcwd()+'/networks.json', 'r') as f:
+                networks = json.load(f)
+        else:
+            networks = []
         print("Fetching Random IPs")
-        self.notPingable = self.SubnetsToRandomIP(notPingable)
+        self.notPingable = self.SubnetsToRandomIP(notPingable,networks)
         notPingable = ""
 
         print("Found",len(self.notPingable),"subnets")
@@ -363,11 +390,15 @@ class Geolocator:
         threads = []
         for location in self.locations:
             if len(run) > 0 and location['name'] in run:
-                threads.append(Thread(target=self.fpingLocation, args=([location,True])))
+                threads.append(Thread(target=self.fpingLocation, args=([location,True,False,networks])))
         for thread in threads:
             thread.start()
         for thread in threads:
             thread.join()
+
+    def networkToSubs(self,subnet):
+        network = netaddr.IPNetwork(subnet)
+        return [str(sn) for sn in network.subnet(21)]
 
     def routingWorker(self,queue,outQueue):
         cache = []
@@ -381,8 +412,7 @@ class Geolocator:
                 outQueue.put("")
                 continue
             ips = ipsRaw[0][1].split(",")
-            network = netaddr.IPNetwork(subnet)
-            networklist = [str(sn) for sn in network.subnet(21)]
+            networklist = self.networkToSubs(subnet)
             sus = {}
             sus['networks'],sus['ips'] = {},[]
             for net in networklist:
