@@ -378,6 +378,7 @@ class Geolocator:
             ipsRaw = self.getIPsFromSubnet(connection,subnet)
             if not ipsRaw:
                 print("No IPs found for",subnet)
+                outQueue.put("")
                 continue
             ips = ipsRaw[0][1].split(",")
             network = netaddr.IPNetwork(subnet)
@@ -406,8 +407,10 @@ class Geolocator:
         map,count = {},0
         while length != count:
             while not outQueue.empty():
-                map = {**map, **outQueue.get()}
+                data = outQueue.get()
                 count += 1
+                if data == "": continue
+                map = {**map, **data}
             time.sleep(0.05)
         for process in processes:
             process.join()
