@@ -387,7 +387,7 @@ class Geolocator:
             for net in networklist:
                 if net in cache: continue
                 for ip in ips:
-                    if net in cache: continue
+                    if net in cache: break
                     if ipaddress.IPv4Address(ip) in ipaddress.IPv4Network(net):
                         sus['ips'].append(ip)
                         sus['networks'][ip] = {}
