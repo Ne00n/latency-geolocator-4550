@@ -370,8 +370,7 @@ class Geolocator:
             thread.join()
 
     def routingWorker(self,queue,outQueue):
-        sus = {}
-        sus['networks'],sus['subnet'],sus['ips'] = {},[],[]
+        cache = []
         connection = sqlite3.connect("file:subnets?mode=memory&cache=shared", uri=True)
         while queue.qsize() > 0 :
             subnet = queue.get()
@@ -383,26 +382,36 @@ class Geolocator:
             ips = ipsRaw[0][1].split(",")
             network = netaddr.IPNetwork(subnet)
             networklist = [str(sn) for sn in network.subnet(21)]
+            sus = {}
+            sus['networks'],sus['ips'] = {},[]
             for net in networklist:
-                if net in sus['subnet']: continue
+                if net in cache: continue
                 for ip in ips:
+                    if net in cache: continue
                     if ipaddress.IPv4Address(ip) in ipaddress.IPv4Network(net):
                         sus['ips'].append(ip)
                         sus['networks'][ip] = {}
                         sus['networks'][ip]['latency'] = 0
                         sus['networks'][ip]['subnet'] = net
                         sus['networks'][ip]['network'] = subnet
-                        sus['subnet'].append(net)
+                        cache.append(net)
                         ips.remove(ip)
+            outQueue.put(sus)
         print("Worker closed")
-        outQueue.put(sus)
 
-    def routingLunch(self,queue,outQueue,coreCount):
+    def routingLunch(self,queue,outQueue,coreCount,length):
         processes = [Process(target=self.routingWorker, args=(queue,outQueue,)) for _ in range(coreCount)]
         for process in processes:
             process.start()
+        map,count = {},0
+        while length != count:
+            while not outQueue.empty():
+                map = {**map, **outQueue.get()}
+                count += 1
+            time.sleep(0.05)
         for process in processes:
             process.join()
+        return map
 
     def routing(self):
         queue,outQueue = Queue(),Queue()
@@ -422,16 +431,12 @@ class Geolocator:
         for subnet in subnets:
             queue.put(subnet)
         coreCount = int(input("How many processes do you want? suggestion "+str(int(len(os.sched_getaffinity(0)) / 2))+": "))
-        self.routingLunch(queue,outQueue,coreCount)
-        map = {}
-        while not outQueue.empty():
-            map = {**map, **outQueue.get()}
+        map = self.routingLunch(queue,outQueue,coreCount,len(subnets))
         random.shuffle(map['ips'])
         self.pingableLength = len(map['ips'])
         self.notPingable = map['ips']
         results = self.fpingLocation(self.locations[0],False,True)
         del map['ips']
-        del map['subnet']
         for ip,latency in results.items():
             map['networks'][ip]['latency'] = latency
         del results
