@@ -372,10 +372,11 @@ class Geolocator:
     def routingWorker(self,queue,outQueue):
         sus = {}
         sus['networks'],sus['subnet'],sus['ips'] = {},[],[]
+        connection = sqlite3.connect("file:subnets?mode=memory&cache=shared", uri=True)
         while queue.qsize() > 0 :
             subnet = queue.get()
             print(subnet)
-            ipsRaw = self.getIPsFromSubnet(self.connection,subnet)
+            ipsRaw = self.getIPsFromSubnet(connection,subnet)
             if not ipsRaw:
                 print("No IPs found for",subnet)
                 continue
@@ -383,8 +384,8 @@ class Geolocator:
             network = netaddr.IPNetwork(subnet)
             networklist = [str(sn) for sn in network.subnet(21)]
             for net in networklist:
+                if net in sus['subnet']: continue
                 for ip in ips:
-                    if net in sus['subnet']: continue
                     if ipaddress.IPv4Address(ip) in ipaddress.IPv4Network(net):
                         sus['ips'].append(ip)
                         sus['networks'][ip] = {}
