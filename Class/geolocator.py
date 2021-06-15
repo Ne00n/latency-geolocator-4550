@@ -405,12 +405,15 @@ class Geolocator:
         for process in processes:
             process.start()
         map,count = {},0
+        map['networks'],map['ips'] = {},[]
         while length != count:
             while not outQueue.empty():
                 data = outQueue.get()
                 count += 1
                 if data == "": continue
-                map = {**map, **data}
+                for ip in data['ips']:
+                    map['networks'][ip] = data['networks'][ip]
+                    map['ips'].append(ip)
             time.sleep(0.05)
         for process in processes:
             process.join()
