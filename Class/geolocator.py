@@ -1,12 +1,13 @@
-import subprocess, ipaddress, random, pyasn, sqlite3, netaddr, time, json, sys, re, os
+import ipaddress, random, pyasn, sqlite3, time, sys, re, os
 from multiprocessing import Process, Queue
 from datetime import datetime
 from netaddr import IPNetwork
 from threading import Thread
+from Class.base import Base
 from shutil import copyfile
 import geoip2.database
 
-class Geolocator:
+class Geolocator(Base):
 
     masscanDir,locations,asndb,notPingable,pingableLength = "","","","",0
     connection = sqlite3.connect("file:subnets?mode=memory&cache=shared", uri=True)
@@ -16,13 +17,11 @@ class Geolocator:
         self.asndb = pyasn.pyasn(os.getcwd()+'/asn.dat')
         self.masscanDir = os.getcwd()+masscanDir
         print("Loading locations.json")
-        with open(os.getcwd()+"/locations.json", 'r') as f:
-            self.locations = json.load(f)
+        self.locations = self.loadJson(os.getcwd()+'/locations.json')
 
     def loadPingable(self):
         print("Loading pingable.json")
-        with open(os.getcwd()+"/pingable.json", 'r') as f:
-            pingable = json.load(f)
+        pingable = self.loadJson(os.getcwd()+'/pingable.json')
         self.pingableLength = len(pingable)
         print("Offloading pingable.json into SQLite Database")
         self.connection.execute("""CREATE TABLE subnets (subnet, ips)""")
@@ -38,10 +37,6 @@ class Geolocator:
 
     def dumpDatabase(self):
         return list(self.connection.execute("SELECT * FROM subnets"))
-
-    def cmd(self,cmd):
-        p = subprocess.run(cmd, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-        return [p.stdout.decode('utf-8'),p.stderr.decode('utf-8')]
 
     def debug(self,ip):
         lookup = self.asndb.lookup(ip)
@@ -73,8 +68,7 @@ class Geolocator:
             with open(self.masscanDir+"tmp"+file, 'a') as out:
                 out.write(dump)
             print("Thread "+str(thread),"Parsing",file)
-            with open(self.masscanDir+"tmp"+file, 'r') as f:
-                dumpJson = json.load(f)
+            dumpJson = self.loadJson(self.masscanDir+"tmp"+file)
             os.remove(self.masscanDir+"tmp"+file)
             print("Thread "+str(thread),"Building list")
             for line in dumpJson:
@@ -98,8 +92,7 @@ class Geolocator:
                     if len(list[subnet]) < int(2000/thread): continue
                     list[subnet] = list[subnet][:int(2000/thread)]
         print("Thread "+str(thread),"Done, saving file",'tmp'+str(thread)+'-pingable.json')
-        with open(os.getcwd()+'/tmp'+str(thread)+'-pingable.json', 'w') as f:
-            json.dump(list, f)
+        self.saveJson(list,os.getcwd()+'/tmp'+str(thread)+'-pingable.json')
 
     def masscan(self,routing=False):
         print("Generating json")
@@ -117,18 +110,14 @@ class Geolocator:
             if runs == 1 and diff != 0: list.append(filelist[len(filelist)-diff:len(filelist)][0])
             processes.append(Process(target=self.masscanFiles, args=([list,runs,routing])))
             runs += 1
-        for process in processes:
-            process.start()
-        for process in processes:
-            process.join()
+        self.startJoin(processes)
         print("Merging files")
         runs,pingable = 1,{}
         while runs <= coreCount:
             print("Loading","tmp"+str(runs)+"-pingable.json")
-            with open(os.getcwd()+'/tmp'+str(runs)+'-pingable.json', 'r') as f:
-                file = json.load(f)
-                pingable = {**pingable, **file}
-                os.remove(os.getcwd()+'/tmp'+str(runs)+'-pingable.json')
+            file = self.loadJson(os.getcwd()+'/tmp'+str(runs)+'-pingable.json')
+            pingable = {**pingable, **file}
+            os.remove(os.getcwd()+'/tmp'+str(runs)+'-pingable.json')
             runs  += 1
         print("Filtering list")
         for subnet in pingable:
@@ -140,8 +129,7 @@ class Geolocator:
                 if len(pingable[subnet]) < 2000: continue
                 pingable[subnet] = pingable[subnet][:2000]
         print("Saving","pingable.json")
-        with open(os.getcwd()+'/pingable.json', 'w') as f:
-            json.dump(pingable, f)
+        self.saveJson(pingable,os.getcwd()+'/pingable.json')
 
     def getIPs(self,connection,row,length=1000):
         list = []
@@ -150,13 +138,6 @@ class Geolocator:
             ips = row[1].split(",")
             list.append(ips[0])
         return list
-
-    def SliceAndDice(self,notPingable,row):
-        if row + 1000 > len(notPingable):
-            maximale = len(notPingable)
-        else:
-            maximale = row + 1000
-        return notPingable[row:maximale]
 
     def SubnetsToRandomIP(self,list,networks):
         ips = []
@@ -179,16 +160,6 @@ class Geolocator:
                     ips.append(random.choice(ipaaaays))
         return ips
 
-    def getAvrg(self,result):
-        latency = {}
-        parsed = re.findall("([0-9.]+).*?:.*?([0-9+])%(.*?\/([0-9.]+))?",result, re.MULTILINE)
-        for row in parsed:
-            if row[3] != "":
-                latency[row[0]] = row[3]
-            else:
-                latency[row[0]] = "retry"
-        return latency
-
     def mapToSubnet(self,latency,networks,subnetCache):
         subnet = {}
         for ip, ms in latency.items():
@@ -205,25 +176,6 @@ class Geolocator:
             subnetCache[lookup[1]] = self.networkToSubs(lookup[1])
             subnet[lookup[1]] = ms
         return subnet,subnetCache
-
-    def csvToDict(self,csv):
-        dict = {}
-        for row in csv.splitlines():
-            line = row.split(",")
-            dict[line[0]] = line[1]
-        return dict
-
-    def dictToCsv(self,dict):
-        csv = ""
-        for line in dict.items():
-            csv += str(line[0])+","+str(line[1])+"\n"
-        return csv
-
-    def listToDict(self,list,index=0,data=1):
-        dict = {}
-        for row in list:
-            dict[row[index]] = row[data]
-        return dict
 
     def fpingLocation(self,location,update=False,routing=False,networks=[]):
         subnetCache,length,row,map = {},self.pingableLength,0,{}
@@ -300,10 +252,7 @@ class Geolocator:
         for location in self.locations:
             if len(run) > 0 and location['name'] in run:
                 threads.append(Thread(target=self.fpingLocation, args=([location])))
-        for thread in threads:
-            thread.start()
-        for thread in threads:
-            thread.join()
+        self.startJoin(threads)
 
     def generate(self):
         print("Generate")
@@ -375,8 +324,7 @@ class Geolocator:
         self.loadPingable()
         if os.path.exists(os.getcwd()+'/networks.json'):
             print("Loading networks.json")
-            with open(os.getcwd()+'/networks.json', 'r') as f:
-                networks = json.load(f)
+            networks = self.loadJson(os.getcwd()+'/networks.json')
         else:
             networks = []
         print("Fetching Random IPs")
@@ -391,14 +339,7 @@ class Geolocator:
         for location in self.locations:
             if len(run) > 0 and location['name'] in run:
                 threads.append(Thread(target=self.fpingLocation, args=([location,True,False,networks])))
-        for thread in threads:
-            thread.start()
-        for thread in threads:
-            thread.join()
-
-    def networkToSubs(self,subnet):
-        network = netaddr.IPNetwork(subnet)
-        return [str(sn) for sn in network.subnet(21)]
+        self.startJoin(threads)
 
     def routingWorker(self,queue,outQueue):
         cache = []
@@ -492,5 +433,4 @@ class Geolocator:
                 if float(latency['latency']) > (initial + 20) or float(latency['latency']) < (initial - 20): flagged = True
             if flagged: networks.append(network)
         print("Saving","networks.json")
-        with open(os.getcwd()+'/networks.json', 'w') as f:
-            json.dump(networks, f)
+        self.saveJson(networks,os.getcwd()+'/networks.json')
