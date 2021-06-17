@@ -44,7 +44,7 @@ class Base:
 
     def networkToSubs(self,subnet):
         network = netaddr.IPNetwork(subnet)
-        return [str(sn) for sn in network.subnet(21)]
+        return [str(sn) for sn in network.subnet(22)]
 
     def saveJson(self,json,path):
         with open(path, 'w') as f:
