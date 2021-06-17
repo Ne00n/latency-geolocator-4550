@@ -46,9 +46,9 @@ class Base:
         network = netaddr.IPNetwork(subnet)
         return [str(sn) for sn in network.subnet(22)]
 
-    def saveJson(self,json,path):
+    def saveJson(self,data,path):
         with open(path, 'w') as f:
-            json.dump(json, f)
+            json.dump(data, f)
 
     def loadJson(self,path):
         with open(path, 'r') as f:
