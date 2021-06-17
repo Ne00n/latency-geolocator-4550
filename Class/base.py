@@ -59,3 +59,11 @@ class Base:
             thread.start()
         for thread in threads:
             thread.join()
+
+    def loadNetworks(self):
+        if os.path.exists(os.getcwd()+'/networks.json'):
+            print("Loading networks.json")
+            networks = self.loadJson(os.getcwd()+'/networks.json')
+        else:
+            networks = []
+        return networks

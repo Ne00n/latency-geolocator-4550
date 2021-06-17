@@ -246,12 +246,14 @@ class Geolocator(Base):
         self.loadPingable()
         print("Got",str(self.pingableLength),"subnets")
 
+
+        networks = self.loadNetworks()
         run = self.checkFiles()
 
         threads = []
         for location in self.locations:
             if len(run) > 0 and location['name'] in run:
-                threads.append(Thread(target=self.fpingLocation, args=([location])))
+                threads.append(Thread(target=self.fpingLocation, args=([location,False,False,networks])))
         self.startJoin(threads)
 
     def generate(self):
@@ -285,7 +287,6 @@ class Geolocator(Base):
                         if float(routing[data[0]]['latency']) > float(subnets[location['name']][data[0]]):
                             routing[data[0]]['latency'] = subnets[location['name']][data[0]]
                             routing[data[0]]['datacenter'] = location['name']
-
                 else:
                     print("Could not find",data[0],"in",location['name'])
         export = ""
@@ -322,11 +323,7 @@ class Geolocator(Base):
                         print("Skipping",line[0])
         notPingable,tmp = list(set(notPingable)),""
         self.loadPingable()
-        if os.path.exists(os.getcwd()+'/networks.json'):
-            print("Loading networks.json")
-            networks = self.loadJson(os.getcwd()+'/networks.json')
-        else:
-            networks = []
+        networks = self.loadNetworks()
         print("Fetching Random IPs")
         self.notPingable = self.SubnetsToRandomIP(notPingable,networks)
         notPingable = ""
