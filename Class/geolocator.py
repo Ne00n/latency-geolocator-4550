@@ -89,8 +89,8 @@ class Geolocator(Base):
                     if len(list[subnet]) < 50: continue
                     list[subnet] = list[subnet][:50]
                 else:
-                    if len(list[subnet]) < int(2000/thread): continue
-                    list[subnet] = list[subnet][:int(2000/thread)]
+                    if len(list[subnet]) < int(3000/thread): continue
+                    list[subnet] = list[subnet][:int(3000/thread)]
         print("Thread "+str(thread),"Done, saving file",'tmp'+str(thread)+'-pingable.json')
         self.saveJson(list,os.getcwd()+'/tmp'+str(thread)+'-pingable.json')
 
@@ -126,8 +126,8 @@ class Geolocator(Base):
                 if len(pingable[subnet]) < 50: continue
                 pingable[subnet] = pingable[subnet][:50]
             else:
-                if len(pingable[subnet]) < 2000: continue
-                pingable[subnet] = pingable[subnet][:2000]
+                if len(pingable[subnet]) < 3000: continue
+                pingable[subnet] = pingable[subnet][:3000]
         print("Saving","pingable.json")
         self.saveJson(pingable,os.getcwd()+'/pingable.json')
 
