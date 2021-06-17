@@ -85,9 +85,9 @@ class Geolocator(Base):
             print("Thread "+str(thread),"Filtering list")
             for subnet in list:
                 network = subnet.split("/")
-                if routing is False or int(network[1]) > 20:
-                    if len(list[subnet]) < 50: continue
-                    list[subnet] = list[subnet][:50]
+                if routing is False or int(network[1]) > 64:
+                    if len(list[subnet]) < 64: continue
+                    list[subnet] = list[subnet][:64]
                 else:
                     if len(list[subnet]) < int(3000/thread): continue
                     list[subnet] = list[subnet][:int(3000/thread)]
@@ -122,9 +122,9 @@ class Geolocator(Base):
         print("Filtering list")
         for subnet in pingable:
             network = subnet.split("/")
-            if routing is False or int(network[1]) > 20:
-                if len(pingable[subnet]) < 50: continue
-                pingable[subnet] = pingable[subnet][:50]
+            if routing is False or int(network[1]) > 64:
+                if len(pingable[subnet]) < 64: continue
+                pingable[subnet] = pingable[subnet][:64]
             else:
                 if len(pingable[subnet]) < 3000: continue
                 pingable[subnet] = pingable[subnet][:3000]
