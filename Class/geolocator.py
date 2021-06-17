@@ -398,7 +398,7 @@ class Geolocator(Base):
             data = line.split("\t")
             if len(data) == 1: continue
             net = data[0].split("/")
-            if int(net[1]) >= 14 and int(net[1]) <= 20: subnets.append(data[0])
+            if int(net[1]) <= 20: subnets.append(data[0])
         print("Found",len(subnets),"subnets")
         self.loadPingable()
         for subnet in subnets:
