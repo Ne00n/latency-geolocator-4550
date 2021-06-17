@@ -144,20 +144,20 @@ class Geolocator(Base):
         subnetsList = self.dumpDatabase()
         subnets = self.listToDict(subnetsList)
         for subnet in list:
-            if subnet in subnets:
-                ipaaaays = subnets[subnet].split(",")
-                random.shuffle(ipaaaays)
-                if subnet in networks:
-                    subs = self.networkToSubs(subnet)
-                    ips.append(random.choice(ipaaaays))
-                    for sub in subs:
-                        for ip in ipaaaays:
-                            if ipaddress.IPv4Address(ip) in ipaddress.IPv4Network(sub):
-                                ips.append(ip)
-                                ipaaaays.remove(ip)
-                                break
-                else:
-                    ips.append(random.choice(ipaaaays))
+            if subnet not in subnets: continue
+            ipaaaays = subnets[subnet].split(",")
+            random.shuffle(ipaaaays)
+            if subnet not in networks:
+                ips.append(random.choice(ipaaaays))
+                continue
+            subs = self.networkToSubs(subnet)
+            ips.append(random.choice(ipaaaays))
+            for sub in subs:
+                for ip in ipaaaays:
+                    if ipaddress.IPv4Address(ip) in ipaddress.IPv4Network(sub):
+                        ips.append(ip)
+                        ipaaaays.remove(ip)
+                        break
         return ips
 
     def mapToSubnet(self,latency,networks,subnetCache):
@@ -167,14 +167,14 @@ class Geolocator(Base):
             if lookup[1] not in networks:
                 subnet[lookup[1]] = ms
                 continue
-            if lookup[1] in subnetCache:
-                for sub in subnetCache[lookup[1]]:
-                    if ipaddress.IPv4Address(ip) in ipaddress.IPv4Network(sub):
-                        subnet[sub] = ms
-                        break
+            if lookup[1] not in subnetCache:
+                subnetCache[lookup[1]] = self.networkToSubs(lookup[1])
+                subnet[lookup[1]] = ms
                 continue
-            subnetCache[lookup[1]] = self.networkToSubs(lookup[1])
-            subnet[lookup[1]] = ms
+            for sub in subnetCache[lookup[1]]:
+                if ipaddress.IPv4Address(ip) in ipaddress.IPv4Network(sub):
+                    subnet[sub] = ms
+                    break
         return subnet,subnetCache
 
     def fpingLocation(self,location,update=False,routing=False,networks=[]):
@@ -246,7 +246,6 @@ class Geolocator(Base):
         self.loadPingable()
         print("Got",str(self.pingableLength),"subnets")
 
-
         networks = self.loadNetworks()
         run = self.checkFiles()
 
@@ -280,13 +279,13 @@ class Geolocator(Base):
                         routing[data[0]] = {}
                         routing[data[0]]['latency'] = subnets[location['name']][data[0]]
                         routing[data[0]]['datacenter'] = location['name']
-                    else:
-                        if routing[data[0]]['latency'] == "retry" or subnets[location['name']][data[0]] == "retry":
-                            print("Skipping",data[0])
-                            continue
-                        if float(routing[data[0]]['latency']) > float(subnets[location['name']][data[0]]):
-                            routing[data[0]]['latency'] = subnets[location['name']][data[0]]
-                            routing[data[0]]['datacenter'] = location['name']
+                        continue
+                    if routing[data[0]]['latency'] == "retry" or subnets[location['name']][data[0]] == "retry":
+                        print("Skipping",data[0])
+                        continue
+                    if float(routing[data[0]]['latency']) > float(subnets[location['name']][data[0]]):
+                        routing[data[0]]['latency'] = subnets[location['name']][data[0]]
+                        routing[data[0]]['datacenter'] = location['name']
                 else:
                     print("Could not find",data[0],"in",location['name'])
         export = ""
