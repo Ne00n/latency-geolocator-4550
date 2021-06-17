@@ -349,12 +349,12 @@ class Geolocator(Base):
                 outQueue.put("")
                 continue
             ips = ipsRaw[0][1].split(",")
+            ips = sorted(ips, key = ipaddress.IPv4Address)
             networklist = self.networkToSubs(subnet)
             sus = {}
             sus['networks'],sus['ips'] = {},[]
             for net in networklist:
-                if net in cache: continue
-                for ip in ips:
+                for index, ip in enumerate(ips):
                     if net in cache: break
                     if ipaddress.IPv4Address(ip) in ipaddress.IPv4Network(net):
                         sus['ips'].append(ip)
@@ -363,7 +363,7 @@ class Geolocator(Base):
                         sus['networks'][ip]['subnet'] = net
                         sus['networks'][ip]['network'] = subnet
                         cache.append(net)
-                        ips.remove(ip)
+                        ips = ips[index:]
             outQueue.put(sus)
         print("Worker closed")
 
