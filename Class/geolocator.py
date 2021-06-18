@@ -338,7 +338,6 @@ class Geolocator(Base):
         self.startJoin(threads)
 
     def routingWorker(self,queue,outQueue):
-        cache = []
         connection = sqlite3.connect("file:subnets?mode=memory&cache=shared", uri=True)
         while queue.qsize() > 0 :
             subnet = queue.get()
@@ -355,15 +354,14 @@ class Geolocator(Base):
             sus['networks'],sus['ips'] = {},[]
             for net in networklist:
                 for index, ip in enumerate(ips):
-                    if net in cache: break
                     if ipaddress.IPv4Address(ip) in ipaddress.IPv4Network(net):
                         sus['ips'].append(ip)
                         sus['networks'][ip] = {}
                         sus['networks'][ip]['latency'] = 0
                         sus['networks'][ip]['subnet'] = net
                         sus['networks'][ip]['network'] = subnet
-                        cache.append(net)
                         ips = ips[index:]
+                        break
             outQueue.put(sus)
         print("Worker closed")
 
