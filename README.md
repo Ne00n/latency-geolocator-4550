@@ -45,6 +45,11 @@ python3 geolocator.py masscan
 Reduces about 70GB of raw data into a usable small file<br />
 Be warned, the memory usage will be up to 5 times the masscan .json file size!<br />
 
+```
+python3 geolocator.py masscan routing
+```
+Will generate a bigger pingable.json with up to 3000 IP's per Subnet instead of 64
+
 2. Run geolocator to get latency data from each location
 ```
 python3 geolocator.py geolocate
