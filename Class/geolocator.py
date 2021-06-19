@@ -140,7 +140,7 @@ class Geolocator(Base):
         return list
 
     def SubnetsToRandomIP(self,list,networks):
-        ips = []
+        mapping,ips = {},[]
         subnetsList = self.dumpDatabase()
         subnets = self.listToDict(subnetsList)
         for subnet in list:
@@ -156,9 +156,10 @@ class Geolocator(Base):
                 for ip in ipaaaays:
                     if ipaddress.IPv4Address(ip) in ipaddress.IPv4Network(sub):
                         ips.append(ip)
+                        mapping[ip] = sub
                         ipaaaays.remove(ip)
                         break
-        return ips
+        return ips,mapping
 
     def mapToSubnet(self,latency,networks,subnetCache):
         subnet = {}
@@ -168,14 +169,10 @@ class Geolocator(Base):
                 subnet[lookup[1]] = ms
                 continue
             if lookup[1] not in subnetCache:
-                subnetCache[lookup[1]] = self.networkToSubs(lookup[1])
+                subnetCache[lookup[1]] = 1
                 subnet[lookup[1]] = ms
                 continue
-            for sub in subnetCache[lookup[1]]:
-                if ipaddress.IPv4Address(ip) in ipaddress.IPv4Network(sub):
-                    subnet[sub] = ms
-                    break
-            if len(subnetCache) > 20: subnetCache = {}
+            subnet[self.mapping[ip]] = ms
         return subnet,subnetCache
 
     def fpingLocation(self,location,update=False,routing=False,networks=[]):
@@ -325,7 +322,7 @@ class Geolocator(Base):
         self.loadPingable()
         networks = self.loadNetworks()
         print("Fetching Random IPs")
-        self.notPingable = self.SubnetsToRandomIP(notPingable,networks)
+        self.notPingable,self.mapping = self.SubnetsToRandomIP(notPingable,networks)
         notPingable = ""
 
         print("Found",len(self.notPingable),"subnets")
