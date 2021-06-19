@@ -175,6 +175,7 @@ class Geolocator(Base):
                 if ipaddress.IPv4Address(ip) in ipaddress.IPv4Network(sub):
                     subnet[sub] = ms
                     break
+            if len(subnetCache) > 20: subnetCache = {}
         return subnet,subnetCache
 
     def fpingLocation(self,location,update=False,routing=False,networks=[]):
