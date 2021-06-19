@@ -79,3 +79,7 @@ python3 geolocator.py rerun geo 100
 ```
 - Subnet is geographically in the same country where you have a Server, which exceeds the latency of 100<br />
 - You need the [GeoLite2-Country.mmdb](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data) from maxmind for that
+```
+python3 geolocator.py routing
+```
+- Generates networks.json for better optimized messurements
