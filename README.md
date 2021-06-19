@@ -5,9 +5,15 @@ geodns databases are from the past, we gonna build our own with Blackjack and Ho
 **Dependencies**<br />
 ```
 pip3 install pyasn
+pip3 install netaddr
 pip3 install geoip2
 ```
 Wot, you install maxmind geoip, BETRAYAL!
+
+You may need run beforehand
+```
+apt-get install python-dev build-essential
+```
 
 **masscan**<br />
 Example for running masscan (icmp/ping only)
@@ -30,10 +36,6 @@ Get latest routing table dump
 pyasn_util_download.py --latest
 pyasn_util_convert.py --single rib.2021* asn.dat
 ```
-You may need run beforehand
-```
-apt-get install gcc python3-dev
-```
 
 **Usage**<br />
 1. Run geolocator to generate the list<br />
@@ -42,6 +44,11 @@ python3 geolocator.py masscan
 ```
 Reduces about 70GB of raw data into a usable small file<br />
 Be warned, the memory usage will be up to 5 times the masscan .json file size!<br />
+
+```
+python3 geolocator.py masscan routing
+```
+Will generate a bigger pingable.json with up to 3000 IP's per Subnet instead of 64
 
 2. Run geolocator to get latency data from each location
 ```
@@ -77,3 +84,7 @@ python3 geolocator.py rerun geo 100
 ```
 - Subnet is geographically in the same country where you have a Server, which exceeds the latency of 100<br />
 - You need the [GeoLite2-Country.mmdb](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data) from maxmind for that
+```
+python3 geolocator.py routing
+```
+- Generates networks.json for better optimized messurements
