@@ -178,7 +178,7 @@ class Geolocator(Base):
         return subnet,subnetCache
 
     def fpingLocation(self,location,update=False,routing=False,networks=[]):
-        subnetCache,length,row,map = {},self.pingableLength,0,{}
+        loaded,subnetCache,length,row,map = False,{},self.pingableLength,0,{}
         connection = sqlite3.connect("file:subnets?mode=memory&cache=shared", uri=True)
         if update: length = len(self.notPingable)
         while row < length:
@@ -200,10 +200,11 @@ class Geolocator(Base):
                     f.write(csv)
             elif update is True:
                 print(location['name'],"Merging",location['name']+"-subnets.csv")
-                with open(os.getcwd()+'/data/'+location['name']+"-subnets.csv", 'r') as f:
-                    subnetsCurrentRaw = f.read()
-                subnetsCurrent = self.csvToDict(subnetsCurrentRaw)
-                subnetsCurrentRaw = ""
+                if loaded == False:
+                    with open(os.getcwd()+'/data/'+location['name']+"-subnets.csv", 'r') as f:
+                        subnetsCurrentRaw = f.read()
+                    subnetsCurrent = self.csvToDict(subnetsCurrentRaw)
+                    subnetsCurrentRaw,loaded = True,{}
                 for line in subnets.items():
                     if line[1] != "retry": subnetsCurrent[line[0]] = line[1]
                 print(location['name'],"Saving",location['name']+"-subnets.csv")
