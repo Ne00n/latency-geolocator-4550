@@ -140,7 +140,7 @@ class Geolocator(Base):
         return list
 
     def SubnetsToRandomIP(self,list,networks):
-        ips = []
+        mapping,ips = {},[]
         subnetsList = self.dumpDatabase()
         subnets = self.listToDict(subnetsList)
         for subnet in list:
@@ -150,15 +150,18 @@ class Geolocator(Base):
             if subnet not in networks:
                 ips.append(random.choice(ipaaaays))
                 continue
+            subnetIP = random.choice(ipaaaays)
+            ips.append(subnetIP)
+            mapping[subnetIP] = subnet
             subs = self.networkToSubs(subnet)
-            ips.append(random.choice(ipaaaays))
             for sub in subs:
                 for ip in ipaaaays:
                     if ipaddress.IPv4Address(ip) in ipaddress.IPv4Network(sub):
                         ips.append(ip)
+                        mapping[ip] = sub
                         ipaaaays.remove(ip)
                         break
-        return ips
+        return ips,mapping
 
     def mapToSubnet(self,latency,networks,subnetCache):
         subnet = {}
@@ -168,17 +171,14 @@ class Geolocator(Base):
                 subnet[lookup[1]] = ms
                 continue
             if lookup[1] not in subnetCache:
-                subnetCache[lookup[1]] = self.networkToSubs(lookup[1])
+                subnetCache[lookup[1]] = 1
                 subnet[lookup[1]] = ms
                 continue
-            for sub in subnetCache[lookup[1]]:
-                if ipaddress.IPv4Address(ip) in ipaddress.IPv4Network(sub):
-                    subnet[sub] = ms
-                    break
+            subnet[self.mapping[ip]] = ms
         return subnet,subnetCache
 
     def fpingLocation(self,location,update=False,routing=False,networks=[]):
-        subnetCache,length,row,map = {},self.pingableLength,0,{}
+        loaded,subnetCache,length,row,map = False,{},self.pingableLength,0,{}
         connection = sqlite3.connect("file:subnets?mode=memory&cache=shared", uri=True)
         if update: length = len(self.notPingable)
         while row < length:
@@ -200,10 +200,11 @@ class Geolocator(Base):
                     f.write(csv)
             elif update is True:
                 print(location['name'],"Merging",location['name']+"-subnets.csv")
-                with open(os.getcwd()+'/data/'+location['name']+"-subnets.csv", 'r') as f:
-                    subnetsCurrentRaw = f.read()
-                subnetsCurrent = self.csvToDict(subnetsCurrentRaw)
-                subnetsCurrentRaw = ""
+                if loaded == False:
+                    with open(os.getcwd()+'/data/'+location['name']+"-subnets.csv", 'r') as f:
+                        subnetsCurrentRaw = f.read()
+                    subnetsCurrent = self.csvToDict(subnetsCurrentRaw)
+                    subnetsCurrentRaw,loaded = True,{}
                 for line in subnets.items():
                     if line[1] != "retry": subnetsCurrent[line[0]] = line[1]
                 print(location['name'],"Saving",location['name']+"-subnets.csv")
@@ -246,13 +247,12 @@ class Geolocator(Base):
         self.loadPingable()
         print("Got",str(self.pingableLength),"subnets")
 
-        networks = self.loadNetworks()
         run = self.checkFiles()
 
         threads = []
         for location in self.locations:
             if len(run) > 0 and location['name'] in run:
-                threads.append(Thread(target=self.fpingLocation, args=([location,False,False,networks])))
+                threads.append(Thread(target=self.fpingLocation, args=([location,False,False])))
         self.startJoin(threads)
 
     def generate(self):
@@ -324,7 +324,7 @@ class Geolocator(Base):
         self.loadPingable()
         networks = self.loadNetworks()
         print("Fetching Random IPs")
-        self.notPingable = self.SubnetsToRandomIP(notPingable,networks)
+        self.notPingable,self.mapping = self.SubnetsToRandomIP(notPingable,networks)
         notPingable = ""
 
         print("Found",len(self.notPingable),"subnets")
