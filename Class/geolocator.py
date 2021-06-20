@@ -150,8 +150,10 @@ class Geolocator(Base):
             if subnet not in networks:
                 ips.append(random.choice(ipaaaays))
                 continue
+            subnetIP = random.choice(ipaaaays)
+            ips.append(subnetIP)
+            mapping[subnetIP] = subnet
             subs = self.networkToSubs(subnet)
-            ips.append(random.choice(ipaaaays))
             for sub in subs:
                 for ip in ipaaaays:
                     if ipaddress.IPv4Address(ip) in ipaddress.IPv4Network(sub):
