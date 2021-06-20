@@ -246,13 +246,12 @@ class Geolocator(Base):
         self.loadPingable()
         print("Got",str(self.pingableLength),"subnets")
 
-        networks = self.loadNetworks()
         run = self.checkFiles()
 
         threads = []
         for location in self.locations:
             if len(run) > 0 and location['name'] in run:
-                threads.append(Thread(target=self.fpingLocation, args=([location,False,False,networks])))
+                threads.append(Thread(target=self.fpingLocation, args=([location,False,False])))
         self.startJoin(threads)
 
     def generate(self):
