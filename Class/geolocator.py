@@ -215,7 +215,7 @@ class Geolocator(Base):
             row += 1000
             print(location['name'],"Done",row,"of",length)
             if barrier is not False:
-                print("Waiting")
+                print(location['name'],"Waiting")
                 barrier.wait()
             diff = int(datetime.now().timestamp()) - current
             print(location['name'],"Finished in approximately",round(diff * ( (length - row) / 1000) / 60),"minute(s)")
