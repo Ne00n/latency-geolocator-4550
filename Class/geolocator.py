@@ -3,6 +3,7 @@ from multiprocessing import Process, Queue
 from datetime import datetime
 from netaddr import IPNetwork
 from threading import Thread
+from threading import Barrier
 from Class.base import Base
 from shutil import copyfile
 import geoip2.database
@@ -177,7 +178,7 @@ class Geolocator(Base):
             subnet[self.mapping[ip]] = ms
         return subnet,subnetCache
 
-    def fpingLocation(self,location,update=False,routing=False,networks=[]):
+    def fpingLocation(self,location,barrier=False,update=False,routing=False,networks=[]):
         loaded,subnetCache,length,row,map = False,{},self.pingableLength,0,{}
         connection = sqlite3.connect("file:subnets?mode=memory&cache=shared", uri=True)
         if update: length = len(self.notPingable)
@@ -213,6 +214,9 @@ class Geolocator(Base):
                     f.write(csv)
             row += 1000
             print(location['name'],"Done",row,"of",length)
+            if barrier is not False:
+                print("Waiting")
+                barrier.wait()
             diff = int(datetime.now().timestamp()) - current
             print(location['name'],"Finished in approximately",round(diff * ( (length - row) / 1000) / 60),"minute(s)")
         print(location['name'],"Done")
@@ -242,17 +246,28 @@ class Geolocator(Base):
                 run[location['name']] = "y"
         return run
 
+    def barrier(self,run):
+        print("Waits for the slowest thread, makes measurements more accurate")
+        answer = input("Uses barriers? (y/n): ")
+        if answer != "y": return False
+        barriers = 0
+        for location in self.locations:
+            if len(run) > 0 and location['name'] in run: barriers += 1
+
+        barrier = Barrier(barriers)
+
     def geolocate(self):
         print("Geolocate")
         self.loadPingable()
         print("Got",str(self.pingableLength),"subnets")
 
         run = self.checkFiles()
+        barrier = self.barrier(run)
 
         threads = []
         for location in self.locations:
             if len(run) > 0 and location['name'] in run:
-                threads.append(Thread(target=self.fpingLocation, args=([location,False,False])))
+                threads.append(Thread(target=self.fpingLocation, args=([location,barrier,False,False])))
         self.startJoin(threads)
 
     def generate(self):
@@ -330,11 +345,12 @@ class Geolocator(Base):
         print("Found",len(self.notPingable),"subnets")
         if len(self.notPingable) == 0: return False
         run = self.checkFiles("update")
+        barrier = self.barrier(run)
 
         threads = []
         for location in self.locations:
             if len(run) > 0 and location['name'] in run:
-                threads.append(Thread(target=self.fpingLocation, args=([location,True,False,networks])))
+                threads.append(Thread(target=self.fpingLocation, args=([location,barrier,True,False,networks])))
         self.startJoin(threads)
 
     def routingWorker(self,queue,outQueue):
@@ -406,7 +422,7 @@ class Geolocator(Base):
         random.shuffle(map['ips'])
         self.pingableLength = len(map['ips'])
         self.notPingable = map['ips']
-        results = self.fpingLocation(self.locations[0],False,True)
+        results = self.fpingLocation(self.locations[0],False,False,True)
         del map['ips']
         for ip,latency in results.items():
             map['networks'][ip]['latency'] = latency
