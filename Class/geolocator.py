@@ -262,8 +262,8 @@ class Geolocator(Base):
         self.loadPingable()
         print("Got",str(self.pingableLength),"subnets")
 
-        run = self.checkFiles()
         barrier = self.barrier(run)
+        run = self.checkFiles()
 
         threads = []
         for location in self.locations:
@@ -345,8 +345,8 @@ class Geolocator(Base):
 
         print("Found",len(self.notPingable),"subnets")
         if len(self.notPingable) == 0: return False
-        run = self.checkFiles("update")
         barrier = self.barrier(run)
+        run = self.checkFiles("update")
 
         threads = []
         for location in self.locations:
