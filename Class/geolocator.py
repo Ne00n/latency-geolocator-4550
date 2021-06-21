@@ -248,7 +248,9 @@ class Geolocator(Base):
 
     def barrier(self,run):
         print("Waits for the slowest thread, makes measurements more accurate")
-        answer = input("Use barriers? (y/n): ")
+        while True:
+            answer = input("Use barriers? (y/n): ")
+            if answer == "y" or answer == "n": break
         if answer != "y": return False
         barriers = 0
         for location in self.locations:
