@@ -259,11 +259,11 @@ class Geolocator(Base):
 
     def geolocate(self):
         print("Geolocate")
+        run = self.checkFiles()
+        barrier = self.barrier(run)
+
         self.loadPingable()
         print("Got",str(self.pingableLength),"subnets")
-
-        barrier = self.barrier(run)
-        run = self.checkFiles()
 
         threads = []
         for location in self.locations:
@@ -313,6 +313,10 @@ class Geolocator(Base):
 
     def rerun(self,type="retry",latency=0):
         print("Rerun")
+
+        run = self.checkFiles("update")
+        barrier = self.barrier(run)
+
         if os.path.exists(os.getcwd()+"/GeoLite2-Country.mmdb"):
             print("Loading GeoLite2-Country.mmdb")
             reader = geoip2.database.Reader(os.getcwd()+"/GeoLite2-Country.mmdb")
@@ -345,8 +349,6 @@ class Geolocator(Base):
 
         print("Found",len(self.notPingable),"subnets")
         if len(self.notPingable) == 0: return False
-        barrier = self.barrier(run)
-        run = self.checkFiles("update")
 
         threads = []
         for location in self.locations:
