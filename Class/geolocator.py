@@ -255,6 +255,7 @@ class Geolocator(Base):
             if len(run) > 0 and location['name'] in run: barriers += 1
 
         barrier = Barrier(barriers)
+        return barrier
 
     def geolocate(self):
         print("Geolocate")
