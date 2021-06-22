@@ -207,7 +207,7 @@ class Geolocator(Base):
                     subnetsCurrent = self.csvToDict(subnetsCurrentRaw)
                     subnetsCurrentRaw,loaded = True,{}
                 for line in subnets.items():
-                    if line[1] != "retry": subnetsCurrent[line[0]] = line[1]
+                    subnetsCurrent[line[0]] = line[1]
                 print(location['name'],"Saving",location['name']+"-subnets.csv")
                 csv = self.dictToCsv(subnetsCurrent)
                 with open(os.getcwd()+'/data/'+location['name']+"-subnets.csv", "w") as f:
