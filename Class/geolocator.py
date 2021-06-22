@@ -317,6 +317,7 @@ class Geolocator(Base):
     def rerun(self,type="retry",latency=0):
         print("Rerun")
 
+        runs = int(input("How many runs?: "))
         run = self.checkFiles("update")
         barrier = self.barrier(run)
 
@@ -325,39 +326,44 @@ class Geolocator(Base):
             reader = geoip2.database.Reader(os.getcwd()+"/GeoLite2-Country.mmdb")
         else:
             print("Could not find GeoLite2-Country.mmdb")
-        notPingable = []
-        for location in self.locations:
-            print("Loading",location['name']+"-subnets.csv")
-            with open(os.getcwd()+'/data/'+location['name']+"-subnets.csv", 'r') as f:
-                file = f.read()
-            tmp = self.csvToDict(file)
-            for line in tmp.items():
-                if type == "retry" and line[1] == "retry":
-                    notPingable.append(line[0])
-                if type == "latency" and line[1] != "retry" and float(line[1]) > float(latency):
-                    notPingable.append(line[0])
-                if type == "geo" and line[1] != "retry" and float(line[1]) > float(latency):
-                    ip = re.sub(r'[0-9]+/[0-9]+', '1', line[0])
-                    try:
-                        response = reader.country(ip)
-                        if location['country'].upper() == response.country.iso_code: notPingable.append(line[0])
-                    except Exception as e:
-                        print("Skipping",line[0])
-        notPingable,tmp = list(set(notPingable)),""
+
         self.loadPingable()
         networks = self.loadNetworks()
-        print("Fetching Random IPs")
-        self.notPingable,self.mapping = self.SubnetsToRandomIP(notPingable,networks)
-        notPingable = ""
 
-        print("Found",len(self.notPingable),"subnets")
-        if len(self.notPingable) == 0: return False
+        current = 0
+        while current < runs:
+            notPingable = []
+            for location in self.locations:
+                print("Loading",location['name']+"-subnets.csv")
+                with open(os.getcwd()+'/data/'+location['name']+"-subnets.csv", 'r') as f:
+                    file = f.read()
+                tmp = self.csvToDict(file)
+                for line in tmp.items():
+                    if type == "retry" and line[1] == "retry":
+                        notPingable.append(line[0])
+                    if type == "latency" and line[1] != "retry" and float(line[1]) > float(latency):
+                        notPingable.append(line[0])
+                    if type == "geo" and line[1] != "retry" and float(line[1]) > float(latency):
+                        ip = re.sub(r'[0-9]+/[0-9]+', '1', line[0])
+                        try:
+                            response = reader.country(ip)
+                            if location['country'].upper() == response.country.iso_code: notPingable.append(line[0])
+                        except Exception as e:
+                            print("Skipping",line[0])
+            notPingable,tmp = list(set(notPingable)),""
+            print("Fetching Random IPs")
+            self.notPingable,self.mapping = self.SubnetsToRandomIP(notPingable,networks)
+            notPingable = ""
 
-        threads = []
-        for location in self.locations:
-            if len(run) > 0 and location['name'] in run:
-                threads.append(Thread(target=self.fpingLocation, args=([location,barrier,True,False,networks])))
-        self.startJoin(threads)
+            print("Found",len(self.notPingable),"subnets")
+            if len(self.notPingable) == 0: return False
+
+            threads = []
+            for location in self.locations:
+                if len(run) > 0 and location['name'] in run:
+                    threads.append(Thread(target=self.fpingLocation, args=([location,barrier,True,False,networks])))
+            self.startJoin(threads)
+            current += 1
 
     def routingWorker(self,queue,outQueue):
         connection = sqlite3.connect("file:subnets?mode=memory&cache=shared", uri=True)
