@@ -208,10 +208,11 @@ class Geolocator(Base):
                     subnetsCurrentRaw,loaded = True,{}
                 for line in subnets.items():
                     subnetsCurrent[line[0]] = line[1]
-                print(location['name'],"Saving",location['name']+"-subnets.csv")
-                csv = self.dictToCsv(subnetsCurrent)
-                with open(os.getcwd()+'/data/'+location['name']+"-subnets.csv", "w") as f:
-                    f.write(csv)
+                if row + 1000 >= length:
+                    print(location['name'],"Saving",location['name']+"-subnets.csv")
+                    csv = self.dictToCsv(subnetsCurrent)
+                    with open(os.getcwd()+'/data/'+location['name']+"-subnets.csv", "w") as f:
+                        f.write(csv)
             row += 1000
             print(location['name'],"Done",row,"of",length)
             if barrier is not False:
