@@ -289,28 +289,18 @@ class Geolocator(Base):
                 line = row.split(",")
                 dict[line[0]] = line[1]
             subnets[location['name']] = dict
-        lines = asn.splitlines()
-        for line in lines:
-            data = line.split("\t")
+        firstNode = self.locations[0]['name']
+        print("Building dc.conf")
+        for subnet in subnets[firstNode]:
+            latency = {}
             for location in self.locations:
-                if data[0] in subnets[location['name']]:
-                    if data[0] not in routing:
-                        routing[data[0]] = {}
-                        routing[data[0]]['latency'] = subnets[location['name']][data[0]]
-                        routing[data[0]]['datacenter'] = location['name']
-                        continue
-                    if routing[data[0]]['latency'] == "retry" or subnets[location['name']][data[0]] == "retry":
-                        print("Skipping",data[0])
-                        continue
-                    if float(routing[data[0]]['latency']) > float(subnets[location['name']][data[0]]):
-                        routing[data[0]]['latency'] = subnets[location['name']][data[0]]
-                        routing[data[0]]['datacenter'] = location['name']
-                else:
-                    print("Could not find",data[0],"in",location['name'])
+                if subnets[location['name']][subnet] == "retry": continue
+                latency[location['name']] = subnets[location['name']][subnet]
+            routing[subnet] = sorted(latency, key=lambda key: latency[key])
         export = ""
-        print("Saving","db.conf")
+        print("Saving","dc.conf")
         for row in routing.items():
-            export += row[0]+" => "+row[1]['datacenter']+"\n"
+            export += row[0]+" => ["+','.join(row[1])+"]\n"
         with open(os.getcwd()+'/data/dc.conf', 'w+') as out:
             out.write(export)
 
