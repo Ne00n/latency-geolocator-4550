@@ -279,7 +279,7 @@ class Geolocator(Base):
         print("Loading asn.dat")
         with open(os.getcwd()+'/asn.dat', 'r') as f:
             asn = f.read()
-        subnets,routing = {},{}
+        subnets,routing,export = {},{},""
         for location in self.locations:
             print("Loading",location['name']+"-subnets.csv")
             with open(os.getcwd()+'/data/'+location['name']+"-subnets.csv", 'r') as f:
@@ -296,9 +296,8 @@ class Geolocator(Base):
             for location in self.locations:
                 if subnets[location['name']][subnet] == "retry": continue
                 latency[location['name']] = float(subnets[location['name']][subnet])
+            if not latency: continue
             routing[subnet] = sorted(latency, key=lambda key: latency[key])
-            if not routing[subnet]: routing[subnet].append("ERR")
-        export = ""
         print("Saving","dc.conf")
         for row in routing.items():
             export += row[0]+" => ["+','.join(row[1])+"]\n"
