@@ -295,7 +295,7 @@ class Geolocator(Base):
             latency = {}
             for location in self.locations:
                 if subnets[location['name']][subnet] == "retry": continue
-                latency[location['name']] = subnets[location['name']][subnet]
+                latency[location['name']] = float(subnets[location['name']][subnet])
             routing[subnet] = sorted(latency, key=lambda key: latency[key])
         export = ""
         print("Saving","dc.conf")
