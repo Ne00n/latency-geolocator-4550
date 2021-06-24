@@ -60,33 +60,49 @@ class Geolocator(Base):
     def masscanFiles(self,files,thread,routing=False):
         list = {}
         for file in files:
-            print("Thread "+str(thread),"Loading",file)
-            with open(self.masscanDir+file, 'r') as f:
-                dump = f.read()
-            print("Thread "+str(thread),"Modifying",file)
-            dump = re.sub(r'\[\s,', '[', dump)
-            dump = dump+"]"
-            with open(self.masscanDir+"tmp"+file, 'a') as out:
-                out.write(dump)
-            print("Thread "+str(thread),"Parsing",file)
-            dumpJson = self.loadJson(self.masscanDir+"tmp"+file)
-            os.remove(self.masscanDir+"tmp"+file)
-            print("Thread "+str(thread),"Building list")
-            for line in dumpJson:
-                if line['ports'][0]['status'] != "open": continue
-                lookup = self.asndb.lookup(line['ip'])
-                if lookup[0] == None:
-                    print("Thread "+str(thread),"IP not found in asn.dat",line['ip'])
-                    continue
-                if lookup[1] not in list:
-                    list[lookup[1]] = []
+            if file.endswith(".json"):
+                print("Thread "+str(thread),"Loading",file)
+                with open(self.masscanDir+file, 'r') as f:
+                    dump = f.read()
+                print("Thread "+str(thread),"Modifying",file)
+                dump = re.sub(r'\[\s,', '[', dump)
+                dump = dump+"]"
+                with open(self.masscanDir+"tmp"+file, 'a') as out:
+                    out.write(dump)
+                print("Thread "+str(thread),"Parsing",file)
+                dumpJson = self.loadJson(self.masscanDir+"tmp"+file)
+                os.remove(self.masscanDir+"tmp"+file)
+                print("Thread "+str(thread),"Building list")
+                for line in dumpJson:
+                    if line['ports'][0]['status'] != "open": continue
+                    lookup = self.asndb.lookup(line['ip'])
+                    if lookup[0] == None:
+                        print("Thread "+str(thread),"IP not found in asn.dat",line['ip'])
+                        continue
+                    if lookup[1] not in list:
+                        list[lookup[1]] = []
+                        list[lookup[1]].append(line['ip'])
+                        continue
                     list[lookup[1]].append(line['ip'])
-                    continue
-                list[lookup[1]].append(line['ip'])
+            elif file.endswith(".txt"):
+                print("Thread "+str(thread),"Parsing",file)
+                with open(self.masscanDir+file, 'r') as f:
+                    dumpTxT = f.read()
+                print("Thread "+str(thread),"Building list")
+                for ip in dumpTxT.splitlines():
+                    lookup = self.asndb.lookup(ip)
+                    if lookup[0] == None:
+                        print("Thread "+str(thread),"IP not found in asn.dat",ip)
+                        continue
+                    if lookup[1] not in list:
+                        list[lookup[1]] = []
+                        list[lookup[1]].append(ip)
+                        continue
+                    list[lookup[1]].append(ip)
             print("Thread "+str(thread),"Filtering list")
             for subnet in list:
                 network = subnet.split("/")
-                if routing is False or int(network[1]) > 64:
+                if routing is False or int(network[1]) > 20:
                     if len(list[subnet]) < 64: continue
                     list[subnet] = list[subnet][:64]
                 else:
@@ -100,7 +116,7 @@ class Geolocator(Base):
         files = os.listdir(self.masscanDir)
         filelist,processes,runs = [],[],1
         for file in files:
-            if ".json" in file: filelist.append(file)
+            if file.endswith(".json") or  file.endswith(".txt"): filelist.append(file)
         print("Found",len(filelist),"file(s)")
         print("Notice: Make sure you got 3GB+ memory available for each process")
         coreCount = int(input("How many processes do you want? suggestion "+str(int(len(os.sched_getaffinity(0)) / 2))+": "))
