@@ -304,19 +304,19 @@ class Geolocator(Base):
             for row in file.splitlines():
                 line = row.split(",")
                 dict[line[0]] = line[1]
-            subnets[location['name']] = dict
-        firstNode = self.locations[0]['name']
+            subnets[location['id']] = dict
+        firstNode = self.locations[0]['id']
         print("Building dc.conf")
         for subnet in subnets[firstNode]:
             latency = {}
             for location in self.locations:
-                if subnets[location['name']][subnet] == "retry": continue
-                latency[location['name']] = float(subnets[location['name']][subnet])
+                if subnets[location['id']][subnet] == "retry": continue
+                latency[location['id']] = float(subnets[location['id']][subnet])
             if not latency: continue
             routing[subnet] = sorted(latency, key=lambda key: latency[key])
         print("Saving","dc.conf")
         for row in routing.items():
-            export += row[0]+" => ["+','.join(row[1])+"]\n"
+            export += row[0]+" => ["+','.join(str(v) for v in row[1])+"]\n"
         with open(os.getcwd()+'/data/dc.conf', 'w+') as out:
             out.write(export)
 

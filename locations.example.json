@@ -1,4 +1,4 @@
 [
- {"name":"NLD1","country":"nl","ip":"8.8.8.8"},
- {"name":"NYC1","country":"us","ip":"1.1.1.1"}
+ {"id":1,"name":"NLD1","country":"nl","ip":"8.8.8.8"},
+ {"id":2,"name":"NYC1","country":"us","ip":"1.1.1.1"}
 ]
