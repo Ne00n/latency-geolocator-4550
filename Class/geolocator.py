@@ -139,7 +139,7 @@ class Geolocator(Base):
         print("Filtering list")
         for subnet in pingable:
             network = subnet.split("/")
-            if routing is False or int(network[1]) > 64:
+            if routing is False or int(network[1]) > 20:
                 if len(pingable[subnet]) < 64: continue
                 pingable[subnet] = pingable[subnet][:64]
             else:
