@@ -1,8 +1,7 @@
-import subprocess, json, re
+import subprocess, json, sys, re
 
 with open("targets.json", 'r') as f:
     targets =  json.load(f)
-
 
 count = 0
 match = []
@@ -15,7 +14,7 @@ while True:
     p = subprocess.run(fping, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False)
     parsed = re.findall("([0-9.]+).*?([0-9]+.[0-9]).*?([0-9])% loss",p.stdout.decode('utf-8'), re.MULTILINE)
     for ip,ms,loss in parsed:
-        if float(ms) < 130 and ip not in match: match.append(ip)
+        if float(ms) < float(sys.argv[1]) and ip not in match: match.append(ip)
     count = count + 50
     with open("match.json", 'w') as f:
         json.dump(match, f)
