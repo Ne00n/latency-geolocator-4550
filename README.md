@@ -19,6 +19,9 @@ apt-get install python-dev build-essential
 Example for running masscan (icmp/ping only)
 ```
 masscan --randomize-hosts 0.0.0.0/0 --ping  --excludefile exclude.conf --rate 50000 --rotate 5min --rotate-dir /var/log/masscan/ --output-format json --output-filename icmp.json
+#or
+https://gist.github.com/Ne00n/140bf52e94b195876d11dde063434f38
+#Saves files as .csv uses way less space and memory
 ```
 This will scan the entire internet, except a few excluded ranges with 50kpps randomly<br />
 I would suggest you talk to your ISP, especially on Virtual Machines before sending 50kpps if they are fine with it.
@@ -26,7 +29,7 @@ I would suggest you talk to your ISP, especially on Virtual Machines before send
 As of now, I have not seen a single abuse while doing so.
 
 **Prepare**<br />
-Put [masscan](https://github.com/robertdavidgraham/masscan) json files into masscan/<br />
+Put [masscan](https://github.com/robertdavidgraham/masscan) .json or .csv files into masscan/<br />
 Rename locations.example.json to locations.json and fill it up<br />
 ```
 cp locations.example.json locations.json
@@ -34,7 +37,7 @@ cp locations.example.json locations.json
 Get latest routing table dump
 ```
 pyasn_util_download.py --latest
-pyasn_util_convert.py --single rib.2021* asn.dat
+pyasn_util_convert.py --single rib.2022* asn.dat
 ```
 
 **Usage**<br />
