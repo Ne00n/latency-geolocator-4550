@@ -1,4 +1,5 @@
 import ipaddress, random, pyasn, sqlite3, time, sys, re, os
+from aggregate_prefixes import aggregate_prefixes
 from multiprocessing import Process, Queue
 from datetime import datetime
 from netaddr import IPNetwork
@@ -304,14 +305,14 @@ class Geolocator(Base):
             for row in file.splitlines():
                 line = row.split(",")
                 dict[line[0]] = line[1]
-            subnets[location['name']] = dict
-        firstNode = self.locations[0]['name']
+            subnets[location['id']] = dict
+        firstNode = self.locations[0]['id']
         print("Building dc.conf")
         for subnet in subnets[firstNode]:
             latency = {}
             for location in self.locations:
-                if subnets[location['name']][subnet] == "retry": continue
-                latency[location['name']] = float(subnets[location['name']][subnet])
+                if subnets[location['id']][subnet] == "retry": continue
+                latency[location['id']] = float(subnets[location['id']][subnet])
             if not latency: continue
             routing[subnet] = sorted(latency, key=lambda key: latency[key])
         print("Saving","dc.conf")
@@ -319,6 +320,74 @@ class Geolocator(Base):
             export += row[0]+" => ["+','.join(str(v) for v in row[1])+"]\n"
         with open(os.getcwd()+'/data/dc.conf', 'w+') as out:
             out.write(export)
+
+    def followingSub(self,index,dc):
+        currentSub = dc[index]['subnet']
+        nextSub = dc[index+1]['subnet']
+        first, second, third, fourth = currentSub.split('.')
+        stops = [1,1,2,4]
+        for i in stops:
+            third = int(third) + i
+            possible = f"{first}.{second}.{third}.{fourth}"
+            if possible == nextSub: return True
+
+    def sameTargets(self,targets,nextTargets):
+        targetsNextRaw = nextTargets.replace("[","").replace("]","")
+        targetsNext = targetsNextRaw.split(",")
+        targetsRaw = targets.replace("[","").replace("]","")
+        targets = targetsRaw.split(",")
+        if targets[:3] == targetsNext[:3]: return True
+
+    def allFollowingSubs(self,dc,current):
+        count = 0
+        for index in range(current, len(dc) -1):
+            if dc[index] == "" or dc[index+1] == "": return count
+            if self.followingSub(index,dc): 
+                count += 1
+            else:
+                return count
+        return count
+
+    def compress(self):
+        print("Compress")
+        print("Loading dc.conf")
+        with open(os.getcwd()+'/data/dc.conf', 'r') as f:
+            dc = f.read()
+        lines = dc.split("\n")
+        dc = []
+
+        print("Parsing dc.conf")
+        for line in lines:
+            if line == "": continue
+            subnet, targets = line.split(' => ')
+            subsub, prefix = subnet.split("/")
+            dc.append({"subnet":subsub,"prefix":prefix,"targets":targets})
+
+        print("Compressing dc.conf")
+        for index,data in enumerate(dc):
+            print(f"Done {index} of {len(dc)}")
+            if index +1 > len(dc) -1 or data == "" or dc[index+1] == "": continue
+            if self.followingSub(index,dc):
+                if self.sameTargets(dc[index]['targets'],dc[index+1]['targets']):
+                    total = self.allFollowingSubs(dc,index)
+                    subnets = []
+                    targets = dc[index:index+total+1]
+                    for entry in targets:  subnets.append(f"{entry['subnet']}/{entry['prefix']}")
+                    results = list(aggregate_prefixes(subnets))
+                    for vIndex, result in enumerate(results):
+                        sub, prefix = str(result).split("/")
+                        dc[index+vIndex]['subnet'] = sub
+                        dc[index+vIndex]['prefix'] = prefix
+                    for i in range(index+len(results), index+len(subnets)): dc[i] = ""
+
+        print("Saving","dc.conf")
+        export = ""
+        for data in dc:
+            if data == "": continue
+            export += f"{data['subnet']}/{data['prefix']} => {data['targets']}\n"
+        with open(os.getcwd()+'/data/dc_optimized.conf', 'w') as out:
+            out.write(export)
+
 
     def rerun(self,type="retry",latency=0):
         print("Rerun")

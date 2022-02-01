@@ -64,7 +64,17 @@ This process is threaded, independent how many locations you have, it will likel
 python3 geolocator.py generate
 ```
 
-4. #Lunch [gdnsd](https://github.com/gdnsd/gdnsd)
+4. Compress the [gdnsd](https://github.com/gdnsd/gdnsd) datacenter subnet mapping file
+```
+python3 geolocator.py compress
+```
+The idea behind compressing is, putting multiple /24 subnets into bigger ones.<br>
+This Reduces memory usage of gdnsd and boot time, however should have no impact on routing.<br>
+Besides if there is no data for a specific subnet, the subnet could be included in a different one with data and shitrouted.<br>
+
+TLDR: makes the config shorter<br>
+
+5. #Lunch [gdnsd](https://github.com/gdnsd/gdnsd)
 ```
 cp config /etc/gdnsd/
 cp myahcdn.net /etc/gdnsd/zones
