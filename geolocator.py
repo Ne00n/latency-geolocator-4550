@@ -26,3 +26,5 @@ elif sys.argv[1] == "rerun":
         geolocator.rerun(sys.argv[2])
 elif sys.argv[1] == "routing":
     geolocator.routing()
+elif sys.argv[1] == "compress":
+    geolocator.compress()
