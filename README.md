@@ -64,7 +64,7 @@ This process is threaded, independent how many locations you have, it will likel
 python3 geolocator.py generate
 ```
 To reduce memory usage and gdnsd boot time, you can specify the failover nodes.<br>
-If one machine dies, it gets routed to the next one and so on, until all of them die, then it gets forwarded to the next available.<br>
+If one machine dies, it gets routed to the next one (based on latency results) and so on, until all of them die, then it gets forwarded to the next available.<br>
 
 Depending on your use case, you should adjust it, you can of course use the full list,<br>
 however more memory usage, eventually you hit 2GB+ and the boot times will be painful.<br>
@@ -75,7 +75,8 @@ python3 geolocator.py compress
 ```
 The idea behind compressing is, putting multiple /24, /23, /22 or /21 subnets into bigger ones.<br>
 This Reduces memory usage of gdnsd and boot time, however should have no impact on routing.<br>
-Besides if there is no data for a specific subnet, the subnet could be included in a different one with data and shitrouted.<br>
+Besides if there is no data for a specific subnet, the subnet could be included in a bigger one with data and shitrouted.<br>
+If there is data, it will be checked first, if the routing is the same, otherwise the subnet will be left as is.<br>
 
 TLDR: makes the config shorter<br>
 
@@ -107,11 +108,11 @@ python3 geolocator.py routing
 ```
 - Generates networks.json for better optimized messurements<br>
 
-Some Networks like Google or Microsoft only announce a big Subnet like a /16 and rout the rest internally.<br>
+Some Networks like Google or Microsoft only announce a big Subnet like a /16 and routed the rest internally.<br>
 Usually the System only grabs one Pingable IP per Subnet to determine the origins.<br>
 However, this can lead the false results, if the subnet is routed internally and not announced separate.<br>
 
 How we try to solve this, is splitting bigger subnets into smaller ones, and for each small one, we use a IP do determine the origins.<br>
 Thats why you should run routing before using any rerun commands, plus you should ran masscan with routing to ensure we find IP's for each small Subnet.<br>
 
-By default we have only 64 IP's per Subnet, which if you get a big Subnet such as a /16 is pretty bad, routing configures the pingable.json with up 3k IP's per Subnet<br>
+By default we have only 64 IP's per Subnet, which if you get a big Subnet such as a /16 is pretty bad, masscan with routing configures the pingable.json with up 3k IP's per Subnet<br>
