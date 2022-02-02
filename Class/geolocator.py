@@ -380,7 +380,7 @@ class Geolocator(Base):
                         dc[index+vIndex]['prefix'] = prefix
                     for i in range(index+len(results), index+len(subnets)): dc[i] = ""
 
-        print("Saving","dc.conf")
+        print("Saving","dc_optimized.conf")
         export = ""
         for data in dc:
             if data == "": continue
