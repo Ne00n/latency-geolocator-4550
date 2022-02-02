@@ -106,3 +106,12 @@ python3 geolocator.py rerun geo 100
 python3 geolocator.py routing
 ```
 - Generates networks.json for better optimized messurements
+Some Networks like Google or Microsoft only announce a big Subnet like a /16 and rout the rest internally.<br>
+Usually the System only grabs one Pingable IP per Subnet to determine the origins.<br>
+However, this can lead the false results, if the subnet is routed internally and not announced separate.<br><br>
+
+How we try to solve this, is splitting bigger subnets into smaller ones, and for each small one, we use a IP do determine the origins.<br>
+Thats why you should run routing before using any rerun commands, plus you should ran masscan with routing to ensure we find IP's for each small Subnet.<br><br>
+
+By default we have only 64 IP's per Subnet, which if you get a big Subnet such as a /64 is pretty bad, routing configures the pingable.json with up 3k IP's per Subnet.<br>
+
