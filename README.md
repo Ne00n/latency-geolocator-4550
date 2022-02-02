@@ -63,6 +63,11 @@ This process is threaded, independent how many locations you have, it will likel
 ```
 python3 geolocator.py generate
 ```
+To reduce memory usage and gdnsd boot time, you can specify the failover nodes.<br>
+If one machine dies, it gets routed to the next one and so on, until all of them die, then it gets forwarded to the next available.<br>
+
+Depending on your use case, you should adjust it, you can of course use the full list,<br>
+however more memory usage, eventually you hit 2GB+ and the boot times will be painful.<br>
 
 4. Compress the [gdnsd](https://github.com/gdnsd/gdnsd) datacenter subnet mapping file
 ```

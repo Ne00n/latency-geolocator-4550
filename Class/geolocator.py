@@ -293,6 +293,8 @@ class Geolocator(Base):
 
     def generate(self):
         print("Generate")
+        print("Less failover nodes will reduce the overall memory usage")
+        failover = int(input("How many failover nodes? suggestion: 2: "))
         print("Loading asn.dat")
         with open(os.getcwd()+'/asn.dat', 'r') as f:
             asn = f.read()
@@ -317,7 +319,7 @@ class Geolocator(Base):
             routing[subnet] = sorted(latency, key=lambda key: latency[key])
         print("Saving","dc.conf")
         for row in routing.items():
-            export += row[0]+" => ["+','.join(str(v) for v in row[1])+"]\n"
+            export += row[0]+" => ["+','.join(str(v) for v in row[1][:failover])+"]\n"
         with open(os.getcwd()+'/data/dc.conf', 'w+') as out:
             out.write(export)
 
