@@ -105,7 +105,8 @@ python3 geolocator.py rerun geo 100
 ```
 python3 geolocator.py routing
 ```
-- Generates networks.json for better optimized messurements<br>
+- Generates networks.json for better optimized messurements<br><br>
+
 Some Networks like Google or Microsoft only announce a big Subnet like a /16 and rout the rest internally.<br>
 Usually the System only grabs one Pingable IP per Subnet to determine the origins.<br>
 However, this can lead the false results, if the subnet is routed internally and not announced separate.<br><br>
