@@ -68,7 +68,7 @@ python3 geolocator.py generate
 ```
 python3 geolocator.py compress
 ```
-The idea behind compressing is, putting multiple /24 subnets into bigger ones.<br>
+The idea behind compressing is, putting multiple /24, /23, /22 or /21 subnets into bigger ones.<br>
 This Reduces memory usage of gdnsd and boot time, however should have no impact on routing.<br>
 Besides if there is no data for a specific subnet, the subnet could be included in a different one with data and shitrouted.<br>
 
