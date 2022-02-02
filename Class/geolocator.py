@@ -382,12 +382,12 @@ class Geolocator(Base):
                         dc[index+vIndex]['prefix'] = prefix
                     for i in range(index+len(results), index+len(subnets)): dc[i] = ""
 
-        print("Saving","dc_optimized.conf")
+        print("Saving","dc.conf")
         export = ""
         for data in dc:
             if data == "": continue
             export += f"{data['subnet']}/{data['prefix']} => {data['targets']}\n"
-        with open(os.getcwd()+'/data/dc_optimized.conf', 'w') as out:
+        with open(os.getcwd()+'/data/dc.conf', 'w') as out:
             out.write(export)
 
 
