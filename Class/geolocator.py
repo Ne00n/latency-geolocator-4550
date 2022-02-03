@@ -507,11 +507,14 @@ class Geolocator(Base):
         for subnet in subnets:
             queue.put(subnet)
         coreCount = int(input("How many processes do you want? suggestion "+str(int(len(os.sched_getaffinity(0)) / 2))+": "))
+        print("Preparing data")
         map = self.routingLunch(queue,outQueue,coreCount,len(subnets))
         random.shuffle(map['ips'])
         self.pingableLength = len(map['ips'])
         self.notPingable = map['ips']
+        print("Starting measurements")
         results = self.fpingLocation(self.locations[0],False,False,True)
+        print("Processing results")
         del map['ips']
         for ip,latency in results.items():
             map['networks'][ip]['latency'] = latency
