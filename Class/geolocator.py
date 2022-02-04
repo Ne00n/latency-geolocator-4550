@@ -1,6 +1,7 @@
 import ipaddress, random, pyasn, sqlite3, time, sys, re, os
 from aggregate_prefixes import aggregate_prefixes
 from multiprocessing import Process, Queue
+import multiprocessing
 from datetime import datetime
 from netaddr import IPNetwork
 from threading import Thread
@@ -195,19 +196,22 @@ class Geolocator(Base):
             subnet[self.mapping[ip]] = ms
         return subnet,subnetCache
 
-    def fpingLocation(self,location,barrier=False,update=False,routing=False,networks=[]):
+    def fpingLocation(self,location,barrier=False,update=False,routing=False,networks=[],multiplicator=4):
         loaded,subnetCache,length,row,map = False,{},self.pingableLength,0,{}
         connection = sqlite3.connect("file:subnets?mode=memory&cache=shared", uri=True)
         if update: length = len(self.notPingable)
         while row < length:
             current = int(datetime.now().timestamp())
-            if update is False and routing is False: ips = self.getIPs(connection,row)
-            if update is True or routing is True: ips = self.SliceAndDice(self.notPingable,row)
-            print(location['name'],"Running fping")
-            cmd = "ssh root@"+location['ip']+" fping -c2 "
-            cmd += " ".join(ips)
-            result = self.cmd(cmd)
-            latency = self.getAvrg(result[1])
+            if update is False and routing is False:  ips = self.getIPs(connection,row,1000 * multiplicator)
+            if update is True or routing is True: ips = self.SliceAndDice(self.notPingable,row,1000 * multiplicator)
+            command,commands = "ssh root@"+location['ip']+" fping -c2",[]
+            for index in range(0,multiplicator -1): 
+                if ips[index*1000:(index+1)*1000]: commands.append(f"{command} {' '.join(ips[index*1000:(index+1)*1000])}")
+            print(location['name'],f"Running fping with {len(commands)} threads")
+            pool = multiprocessing.Pool(processes = 4)
+            results = pool.map(self.cmd, commands)
+            latency = self.getAvrg(results[0][1])
+            for index in range(1,len(results) -1): latency.update(self.getAvrg(results[index][1]))
             subnets,subnetCache = self.mapToSubnet(latency,networks,subnetCache)
             if routing is True:
                 map = {**map, **latency}
@@ -225,18 +229,18 @@ class Geolocator(Base):
                     subnetsCurrentRaw,loaded = True,{}
                 for line in subnets.items():
                     subnetsCurrent[line[0]] = line[1]
-                if row + 1000 >= length:
+                if row + 4000 >= length:
                     print(location['name'],"Saving",location['name']+"-subnets.csv")
                     csv = self.dictToCsv(subnetsCurrent)
                     with open(os.getcwd()+'/data/'+location['name']+"-subnets.csv", "w") as f:
                         f.write(csv)
-            row += 1000
+            row += 1000 * multiplicator
             print(location['name'],"Done",row,"of",length)
             if barrier is not False:
                 print(location['name'],"Waiting")
                 barrier.wait()
             diff = int(datetime.now().timestamp()) - current
-            print(location['name'],"Finished in approximately",round(diff * ( (length - row) / 1000) / 60),"minute(s)")
+            print(location['name'],"Finished in approximately",round(diff * ( (length - row) / (1000 * multiplicator)) / 60),"minute(s)")
         print(location['name'],"Done")
         if routing: return map
 

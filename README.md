@@ -57,7 +57,7 @@ Will generate a bigger pingable.json with up to 3000 IP's per Subnet instead of 
 ```
 python3 geolocator.py geolocate
 ```
-This process is threaded, independent how many locations you have, it will likely take 3-4 hours<br />
+This process is threaded, independent how many locations you have, it will likely take 60-80 minutes<br />
 
 3. Generate the [gdnsd](https://github.com/gdnsd/gdnsd) datacenter subnet mapping file
 ```

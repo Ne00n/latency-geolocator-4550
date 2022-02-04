@@ -2,15 +2,16 @@ import subprocess, netaddr, json, re, os
 
 class Base:
 
-    def cmd(self,cmd):
-        p = subprocess.run(cmd, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    @staticmethod
+    def cmd(command):
+        p = subprocess.run(command, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
         return [p.stdout.decode('utf-8'),p.stderr.decode('utf-8')]
 
-    def SliceAndDice(self,notPingable,row):
+    def SliceAndDice(self,notPingable,row,length=1000):
         if row + 1000 > len(notPingable):
             maximale = len(notPingable)
         else:
-            maximale = row + 1000
+            maximale = row + length
         return notPingable[row:maximale]
 
     def csvToDict(self,csv):
