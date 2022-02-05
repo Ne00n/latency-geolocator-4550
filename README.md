@@ -12,7 +12,7 @@ Wot, you install maxmind geoip, BETRAYAL!
 
 You may need run beforehand
 ```
-apt-get install python-dev build-essential
+apt-get install python3-dev build-essential
 ```
 
 **masscan**<br />
