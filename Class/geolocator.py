@@ -205,7 +205,7 @@ class Geolocator(Base):
             if update is False and routing is False:  ips = self.getIPs(connection,row,1000 * multiplicator)
             if update is True or routing is True: ips = self.SliceAndDice(self.notPingable,row,1000 * multiplicator)
             command,commands = "ssh root@"+location['ip']+" fping -c2",[]
-            for index in range(0,multiplicator -1): 
+            for index in range(0,multiplicator):
                 if ips[index*1000:(index+1)*1000]: commands.append(f"{command} {' '.join(ips[index*1000:(index+1)*1000])}")
             print(location['name'],f"Running fping with {len(commands)} threads")
             pool = multiprocessing.Pool(processes = 4)
