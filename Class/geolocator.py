@@ -211,7 +211,7 @@ class Geolocator(Base):
             pool = multiprocessing.Pool(processes = 4)
             results = pool.map(self.cmd, commands)
             latency = self.getAvrg(results[0][1])
-            for index in range(1,len(results) -1): latency.update(self.getAvrg(results[index][1]))
+            for index in range(1,len(results)): latency.update(self.getAvrg(results[index][1]))
             subnets,subnetCache = self.mapToSubnet(latency,networks,subnetCache)
             if routing is True:
                 map = {**map, **latency}
