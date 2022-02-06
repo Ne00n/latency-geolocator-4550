@@ -256,7 +256,7 @@ class Geolocator(Base):
                 if answer == "yall": yall = True
                 run[location['name']] = "y"
                 print(location['name'],"backing up existing file")
-                if os.path.exists(os.getcwd()+'/data/'+location['name']+"-subnets.csv.bak"):
+                if os.path.exists(os.getcwd()+'/data/'+location['name']+"-subnets.csv.bak") and not yall:
                     answer = input(location['name']+"-subnets.csv.bak already exists. Override? (y/n): ")
                     if answer == "y":
                         copyfile(os.getcwd()+'/data/'+location['name']+"-subnets.csv", os.getcwd()+'/data/'+location['name']+"-subnets.csv.bak")
