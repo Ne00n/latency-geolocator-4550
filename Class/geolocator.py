@@ -13,6 +13,7 @@ import geoip2.database
 class Geolocator(Base):
 
     masscanDir,locations,asndb,notPingable,pingableLength = "","","","",0
+    subnetCache,subnetIPCache = {},[]
     connection = sqlite3.connect("file:subnets?mode=memory&cache=shared", uri=True)
 
     def __init__(self,masscanDir="/masscan/"):
@@ -160,25 +161,42 @@ class Geolocator(Base):
 
     def SubnetsToRandomIP(self,list,networks):
         mapping,ips = {},[]
+        #get the full pingable.json
         subnetsList = self.dumpDatabase()
         subnets = self.listToDict(subnetsList)
+        #go through the subnets we should get a random ip for
         for subnet in list:
+            #if the subnet is not in the pingable.json ignore it
             if subnet not in subnets: continue
+            #get a list of the pingable ip's from that subnet
             ipaaaays = subnets[subnet].split(",")
-            random.shuffle(ipaaaays)
-            if subnet not in networks:
-                ips.append(random.choice(ipaaaays))
-                continue
-            subnetIP = random.choice(ipaaaays)
-            ips.append(subnetIP)
-            mapping[subnetIP] = subnet
-            subs = self.networkToSubs(subnet)
+            #get random ip
+            randomIP = random.choice(ipaaaays)
+            ips.append(randomIP)
+            #if the subnet is not in networks we just use a random ip
+            if subnet not in networks: continue
+            mapping[randomIP] = subnet
+            #caching
+            if not subnet in self.subnetCache:
+                #split the original subnet into /22
+                subs = self.networkToSubs(subnet)
+                self.subnetCache[subnet] = subs
+            else:
+                subs = self.subnetCache[subnet]
+            #counter so we don't check the same again
+            current = 0
+            #for each /22
             for sub in subs:
-                for ip in ipaaaays:
+                for index, ip in enumerate(ipaaaays):
+                    #make sure we don't check the same again
+                    if index <= current: continue
+                    if ip in self.subnetIPCache: continue
+                    #check if the ip is in the given subnet
                     if ipaddress.IPv4Address(ip) in ipaddress.IPv4Network(sub):
                         ips.append(ip)
+                        self.subnetIPCache.append(ip)
                         mapping[ip] = sub
-                        ipaaaays.remove(ip)
+                        current = index
                         break
         return ips,mapping
 
