@@ -63,31 +63,7 @@ class Geolocator(Base):
     def masscanFiles(self,files,thread,routing=False):
         list = {}
         for file in files:
-            if file.endswith(".json"):
-                print("Thread "+str(thread),"Loading",file)
-                with open(self.masscanDir+file, 'r') as f:
-                    dump = f.read()
-                print("Thread "+str(thread),"Modifying",file)
-                dump = re.sub(r'\[\s,', '[', dump)
-                dump = dump+"]"
-                with open(self.masscanDir+"tmp"+file, 'a') as out:
-                    out.write(dump)
-                print("Thread "+str(thread),"Parsing",file)
-                dumpJson = self.loadJson(self.masscanDir+"tmp"+file)
-                os.remove(self.masscanDir+"tmp"+file)
-                print("Thread "+str(thread),"Building list")
-                for line in dumpJson:
-                    if line['ports'][0]['status'] != "open": continue
-                    lookup = self.asndb.lookup(line['ip'])
-                    if lookup[0] == None:
-                        print("Thread "+str(thread),"IP not found in asn.dat",line['ip'])
-                        continue
-                    if lookup[1] not in list:
-                        list[lookup[1]] = []
-                        list[lookup[1]].append(line['ip'])
-                        continue
-                    list[lookup[1]].append(line['ip'])
-            elif file.endswith(".txt"):
+            if file.endswith(".txt"):
                 print("Thread "+str(thread),"Parsing",file)
                 with open(self.masscanDir+file, 'r') as f:
                     dumpTxT = f.read()

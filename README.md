@@ -18,12 +18,10 @@ apt-get install python3-dev build-essential
 **masscan**<br />
 Example for running masscan (icmp/ping only)
 ```
-masscan --randomize-hosts 0.0.0.0/0 --ping  --excludefile exclude.conf --rate 50000 --rotate 5min --rotate-dir /var/log/masscan/ --output-format json --output-filename icmp.json
-#or
 https://gist.github.com/Ne00n/140bf52e94b195876d11dde063434f38
-#Saves files as .csv uses way less space and memory
+#Saves files as .txt uses way less space and memory
 ```
-This will scan the entire internet, except a few excluded ranges with 50kpps randomly<br />
+This will scan the entire internet, except a few excluded ranges with 50kpps<br />
 I would suggest you talk to your ISP, especially on Virtual Machines before sending 50kpps if they are fine with it.
 
 As of now, I have not seen a single abuse while doing so.
@@ -45,8 +43,7 @@ pyasn_util_convert.py --single rib.2022* asn.dat
 ```
 python3 geolocator.py masscan
 ```
-Reduces about 70GB of raw data into a usable small file<br />
-Be warned, the memory usage will be up to 5 times the masscan .json file size!<br />
+Reduces about 6GB of raw data into a usable small file<br />
 
 ```
 python3 geolocator.py masscan routing
