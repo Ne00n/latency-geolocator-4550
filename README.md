@@ -27,7 +27,7 @@ I would suggest you talk to your ISP, especially on Virtual Machines before send
 As of now, I have not seen a single abuse while doing so.
 
 **Prepare**<br />
-Put [masscan](https://github.com/robertdavidgraham/masscan) .json or .csv files into masscan/<br />
+Put [masscan](https://github.com/robertdavidgraham/masscan) .txt files into masscan/<br />
 Rename locations.example.json to locations.json and fill it up<br />
 ```
 cp locations.example.json locations.json
