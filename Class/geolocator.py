@@ -1,4 +1,4 @@
-import ipaddress, random, pyasn, sqlite3, time, sys, re, os
+import ipaddress, random, pyasn, sqlite3, time, json, sys, re, os
 from aggregate_prefixes import aggregate_prefixes
 from multiprocessing import Process, Queue
 import multiprocessing
@@ -23,14 +23,17 @@ class Geolocator(Base):
         print("Loading locations.json")
         self.locations = self.loadJson(os.getcwd()+'/locations.json')
 
-    def loadPingable(self):
+    def loadPingable(self,offloading=True):
         print("Loading pingable.json")
         pingable = self.loadJson(os.getcwd()+'/pingable.json')
         self.pingableLength = len(pingable)
+        if offloading is False:
+            self.pingable = pingable
+            return
         print("Offloading pingable.json into SQLite Database")
         self.connection.execute("""CREATE TABLE subnets (subnet, ips)""")
         for row in pingable.items():
-            self.connection.execute("INSERT INTO subnets VALUES ('"+row[0]+"', '"+','.join(row[1])+"')")
+            self.connection.execute(f"INSERT INTO subnets VALUES ('{row[0]}', '{json.dumps(row[1])}')")
         self.connection.commit()
 
     def getIPsFromSubnet(self,connection,subnet,start=0,end=0):
@@ -444,53 +447,6 @@ class Geolocator(Base):
             self.startJoin(threads)
             current += 1
 
-    def routingWorker(self,queue,outQueue):
-        connection = sqlite3.connect("file:subnets?mode=memory&cache=shared", uri=True)
-        while queue.qsize() > 0 :
-            subnet = queue.get()
-            print(subnet)
-            ipsRaw = self.getIPsFromSubnet(connection,subnet)
-            if not ipsRaw:
-                print("No IPs found for",subnet)
-                outQueue.put("")
-                continue
-            ips = ipsRaw[0][1].split(",")
-            ips = sorted(ips, key = ipaddress.IPv4Address)
-            networklist = self.networkToSubs(subnet)
-            sus = {}
-            sus['networks'],sus['ips'] = {},[]
-            for net in networklist:
-                for index, ip in enumerate(ips):
-                    if ipaddress.IPv4Address(ip) in ipaddress.IPv4Network(net):
-                        sus['ips'].append(ip)
-                        sus['networks'][ip] = {}
-                        sus['networks'][ip]['latency'] = 0
-                        sus['networks'][ip]['subnet'] = net
-                        sus['networks'][ip]['network'] = subnet
-                        ips = ips[index:]
-                        break
-            outQueue.put(sus)
-        print("Worker closed")
-
-    def routingLunch(self,queue,outQueue,coreCount,length):
-        processes = [Process(target=self.routingWorker, args=(queue,outQueue,)) for _ in range(coreCount)]
-        for process in processes:
-            process.start()
-        map,count = {},0
-        map['networks'],map['ips'] = {},[]
-        while length != count:
-            while not outQueue.empty():
-                data = outQueue.get()
-                count += 1
-                if data == "": continue
-                for ip in data['ips']:
-                    map['networks'][ip] = data['networks'][ip]
-                    map['ips'].append(ip)
-            time.sleep(0.05)
-        for process in processes:
-            process.join()
-        return map
-
     def routing(self):
         queue,outQueue = Queue(),Queue()
         print("Routing")
@@ -505,29 +461,29 @@ class Geolocator(Base):
             net = data[0].split("/")
             if int(net[1]) <= 20: subnets.append(data[0])
         print("Found",len(subnets),"subnets")
-        self.loadPingable()
-        for subnet in subnets:
-            queue.put(subnet)
-        coreCount = int(input("How many processes do you want? suggestion "+str(int(len(os.sched_getaffinity(0)) / 2))+": "))
-        print("Preparing data")
-        map = self.routingLunch(queue,outQueue,coreCount,len(subnets))
-        random.shuffle(map['ips'])
-        self.pingableLength = len(map['ips'])
-        self.notPingable = map['ips']
+        self.loadPingable(False)
+        results = {'ips':[],'networks':{}}
+        for index, subnet in enumerate(subnets):
+            if subnet  not in self.pingable: continue
+            data = self.pingable[subnet]
+            for net, ips in data.items():
+                for index, ip in enumerate(ips):
+                    results['ips'].append(ip)
+                    results['networks'][ip] = {'latency':0,'subnet':net,'network':subnet}
+                    break
+        random.shuffle(results['ips'])
+        self.pingableLength = len(results['ips'])
+        self.notPingable = results['ips']
         print("Starting measurements")
-        results = self.fpingLocation(self.locations[0],False,False,True)
+        fpingResults = self.fpingLocation(self.locations[0],False,False,True)
         print("Processing results")
-        del map['ips']
-        for ip,latency in results.items():
-            map['networks'][ip]['latency'] = latency
-        del results
+        for ip,latency in fpingResults.items(): results['networks'][ip]['latency'] = latency
         data = {}
-        for ip,row in map['networks'].items():
+        for ip,row in results['networks'].items():
             if row['network'] not in data: data[row['network']] = {}
             data[row['network']][ip] = {}
             data[row['network']][ip]['latency'] = row['latency']
             data[row['network']][ip]['subnet'] = row['subnet']
-        del map
         networks = []
         for network,ips in data.items():
             initial,flagged = 0,False
