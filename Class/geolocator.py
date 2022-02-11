@@ -84,22 +84,19 @@ class Geolocator(Base):
                         subs = self.networkToSubs(lookup[1])
                         currentSub = lookup[1]
                         list[lookup[1]] = {}
+                        lastSub = 0
                         for sub in subs: list[lookup[1]][sub] = []
-                        lastSub = ""
                     if len(subs) == 1:
+                        if len(list[lookup[1]][lookup[1]]) > 15: continue
                         list[lookup[1]][lookup[1]].append(ip)
                         continue
-                    for sub in subs:
-                        if sub != lastSub and lastSub != "": continue
+                    for iSub, sub in enumerate(subs):
+                        if iSub < lastSub: continue
                         if ipaddress.IPv4Address(ip) in ipaddress.IPv4Network(sub):
+                            if len(list[lookup[1]][sub]) > 15: break
                             list[lookup[1]][sub].append(ip)
-                            lastSub = sub
-            print(f"Thread {thread} Filtering list")
-            for subnet,subnets in list.items():
-                for sub, ips in subnets.items():
-                    if len(ips) > 25:
-                        random.shuffle(ips)
-                        ips = ips[:25]
+                            lastSub = iSub
+                            break
             diff += int(datetime.now().timestamp()) - current
             devidor = 1 if index == 0 else index
             print(f"Thread {thread} Finished in approximately {round((diff / devidor) * (len(files) - index) / 60)} minute(s)")
