@@ -45,11 +45,6 @@ python3 geolocator.py masscan
 ```
 Reduces about 6GB of raw data into a usable small file<br />
 
-```
-python3 geolocator.py masscan routing
-```
-Will generate a bigger pingable.json with up to 3000 IP's per Subnet instead of 64
-
 2. Run geolocator to get latency data from each location
 ```
 python3 geolocator.py geolocate
@@ -110,6 +105,4 @@ Usually the System only grabs one Pingable IP per Subnet to determine the origin
 However, this can lead the false results, if the subnet is routed internally and not announced separate.<br>
 
 How we try to solve this, is splitting bigger subnets into smaller ones, and for each small one, we use a IP do determine the origins.<br>
-Thats why you should run routing before using any rerun commands, plus you should ran masscan with routing to ensure we find IP's for each small Subnet.<br>
-
-By default we have only 64 IP's per Subnet, which if you get a big Subnet such as a /16 is pretty bad, masscan with routing configures the pingable.json with up 3k IP's per Subnet<br>
+Thats why you should run routing before using any rerun commands.<br>

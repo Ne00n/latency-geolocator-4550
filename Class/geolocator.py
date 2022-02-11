@@ -60,51 +60,64 @@ class Geolocator(Base):
             else:
                 print("Not found in",location['name'])
 
-    def masscanFiles(self,files,thread,routing=False):
-        list = {}
-        for file in files:
+    def masscanFiles(self,files,thread):
+        list,diff = {},0
+        for index, file in enumerate(files):
+            print(f"Thread {thread} {index} of {len(files)} files")
+            current = int(datetime.now().timestamp())
             if file.endswith(".txt"):
-                print("Thread "+str(thread),"Parsing",file)
+                print(f"Thread {thread} Loading {file}")
                 with open(self.masscanDir+file, 'r') as f:
                     dumpTxT = f.read()
-                print("Thread "+str(thread),"Building list")
-                for ip in dumpTxT.splitlines():
-                    lookup = self.asndb.lookup(ip)
-                    if lookup[0] == None:
-                        print("Thread "+str(thread),"IP not found in asn.dat",ip)
+                print(f"Thread {thread} Preparing list")
+                pingable,currentSub = [],"127.0.0.0/8"
+                for ip in dumpTxT.splitlines(): pingable.append(ip)
+                pingable = sorted(pingable, key = ipaddress.IPv4Address)
+                print(f"Thread {thread} Building list")
+                for ip in pingable:
+                    if ipaddress.IPv4Address(ip) not in ipaddress.IPv4Network(currentSub):
+                        lookup = self.asndb.lookup(ip)
+                        if lookup[0] == None: continue
+                        subs = self.networkToSubs(lookup[1])
+                        currentSub = lookup[1]
+                        list[lookup[1]] = {}
+                        for sub in subs: list[lookup[1]][sub] = []
+                        lastSub = ""
+                    if len(subs) == 1:
+                        list[lookup[1]][lookup[1]].append(ip)
                         continue
-                    if lookup[1] not in list:
-                        list[lookup[1]] = []
-                        list[lookup[1]].append(ip)
-                        continue
-                    list[lookup[1]].append(ip)
-            print("Thread "+str(thread),"Filtering list")
-            for subnet in list:
-                network = subnet.split("/")
-                if routing is False or int(network[1]) > 20:
-                    if len(list[subnet]) < 64: continue
-                    list[subnet] = list[subnet][:64]
-                else:
-                    if len(list[subnet]) < int(3000/thread): continue
-                    list[subnet] = list[subnet][:int(3000/thread)]
+                    for sub in subs:
+                        if sub != lastSub and lastSub != "": continue
+                        if ipaddress.IPv4Address(ip) in ipaddress.IPv4Network(sub):
+                            list[lookup[1]][sub].append(ip)
+                            lastSub = sub
+            print(f"Thread {thread} Filtering list")
+            for subnet,subnets in list.items():
+                for sub, ips in subnets.items():
+                    if len(ips) > 25:
+                        random.shuffle(ips)
+                        ips = ips[:25]
+            diff += int(datetime.now().timestamp()) - current
+            devidor = 1 if index == 0 else index
+            print(f"Thread {thread} Finished in approximately {round((diff / devidor) * (len(files) - index) / 60)} minute(s)")
         print("Thread "+str(thread),"Done, saving file",'tmp'+str(thread)+'-pingable.json')
         self.saveJson(list,os.getcwd()+'/tmp'+str(thread)+'-pingable.json')
 
-    def masscan(self,routing=False):
+    def masscan(self):
         print("Generating json")
         files = os.listdir(self.masscanDir)
         filelist,processes,runs = [],[],1
         for file in files:
             if file.endswith(".json") or  file.endswith(".txt"): filelist.append(file)
         print("Found",len(filelist),"file(s)")
-        print("Notice: Make sure you got 3GB+ memory available for each process")
+        print("Notice: Make sure you got 1GB of memory available for each process")
         coreCount = int(input("How many processes do you want? suggestion "+str(int(len(os.sched_getaffinity(0)) / 2))+": "))
         split = int(len(filelist) / coreCount)
         diff = len(filelist) - (split * coreCount)
         while runs <= coreCount:
             list = filelist[ (runs -1) *split:( (runs -1) *split)+split]
             if runs == 1 and diff != 0: list.append(filelist[len(filelist)-diff:len(filelist)][0])
-            processes.append(Process(target=self.masscanFiles, args=([list,runs,routing])))
+            processes.append(Process(target=self.masscanFiles, args=([list,runs])))
             runs += 1
         self.startJoin(processes)
         print("Merging files")
@@ -115,15 +128,6 @@ class Geolocator(Base):
             pingable = {**pingable, **file}
             os.remove(os.getcwd()+'/tmp'+str(runs)+'-pingable.json')
             runs  += 1
-        print("Filtering list")
-        for subnet in pingable:
-            network = subnet.split("/")
-            if routing is False or int(network[1]) > 20:
-                if len(pingable[subnet]) < 64: continue
-                pingable[subnet] = pingable[subnet][:64]
-            else:
-                if len(pingable[subnet]) < 3000: continue
-                pingable[subnet] = pingable[subnet][:3000]
         print("Saving","pingable.json")
         self.saveJson(pingable,os.getcwd()+'/pingable.json')
 
