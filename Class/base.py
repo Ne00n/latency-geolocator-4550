@@ -44,6 +44,8 @@ class Base:
         return latency
 
     def networkToSubs(self,subnet):
+        sub, prefix = subnet.split("/")
+        if int(prefix) > 20: return [subnet]
         network = netaddr.IPNetwork(subnet)
         return [str(sn) for sn in network.subnet(22)]
 
