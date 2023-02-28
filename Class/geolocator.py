@@ -108,6 +108,9 @@ class Geolocator(Base):
         files = os.listdir(self.masscanDir)
         filelist,processes,runs = [],[],1
         for file in files:
+            if os.stat(f"{self.masscanDir}/{file}").st_size == 0:
+                print(f"Skipping empty file {file}")
+                continue
             if file.endswith(".json") or  file.endswith(".txt"): filelist.append(file)
         print("Found",len(filelist),"file(s)")
         print("Notice: Make sure you got 1GB of memory available for each process")
