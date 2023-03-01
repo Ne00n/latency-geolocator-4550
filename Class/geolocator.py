@@ -73,24 +73,25 @@ class Geolocator(Base):
                 with open(self.masscanDir+file, 'r') as f:
                     dumpTxT = f.read()
                 print(f"Thread {thread} Preparing list")
-                pingable,currentSub = [],"127.0.0.0/8"
+                pingable,currentSub,subsCache = [],"127.0.0.0/8",{}
                 for ip in dumpTxT.splitlines(): pingable.append(ip)
                 pingable = sorted(pingable, key = ipaddress.IPv4Address)
                 print(f"Thread {thread} Building list")
                 for ip in pingable:
-                    if ipaddress.IPv4Address(ip) not in ipaddress.IPv4Network(currentSub):
-                        lookup = self.asndb.lookup(ip)
-                        if lookup[0] == None: continue
-                        subs = self.networkToSubs(lookup[1])
+                    lookup = self.asndb.lookup(ip)
+                    if lookup[0] == None: continue
+                    if lookup[1] != currentSub:
+                        if not lookup[1] in subsCache: subsCache[lookup[1]] = self.networkToSubs(lookup[1])
                         currentSub = lookup[1]
                         dataList[lookup[1]] = {}
                         lastSub = 0
-                        for sub in subs: dataList[lookup[1]][sub] = []
-                    if len(subs) == 1:
+                        for sub in subsCache[lookup[1]]: dataList[lookup[1]][sub] = []
+                    if len(subsCache[lookup[1]]) == 1:
                         if len(dataList[lookup[1]][lookup[1]]) > 20: continue
                         dataList[lookup[1]][lookup[1]].append(ip)
+                        continue
                     else:
-                        for iSub, sub in enumerate(subs):
+                        for iSub, sub in enumerate(subsCache[lookup[1]]):
                             if iSub < lastSub: continue
                             if ipaddress.IPv4Address(ip) in ipaddress.IPv4Network(sub):
                                 if len(dataList[lookup[1]][sub]) > 20: break
