@@ -93,8 +93,8 @@ class Geolocator(Base):
                     else:
                         for iSub, sub in enumerate(subsCache[lookup[1]]):
                             if iSub < lastSub: continue
+                            if len(dataList[lookup[1]][sub]) > 20: break
                             if ipaddress.IPv4Address(ip) in ipaddress.IPv4Network(sub):
-                                if len(dataList[lookup[1]][sub]) > 20: break
                                 dataList[lookup[1]][sub].append(ip)
                                 lastSub = iSub
                                 break
