@@ -106,7 +106,7 @@ class Geolocator(Base):
             devidor = 1 if index == 0 else index
             print(f"Thread {thread} Finished in approximately {round((diff / devidor) * (len(files) - index) / 60)} minute(s)")
         print("Thread "+str(thread),"Done, saving file",'tmp'+str(thread)+'-pingable.json')
-        self.saveJson(list,os.getcwd()+'/tmp'+str(thread)+'-pingable.json')
+        self.saveJson(dataList,os.getcwd()+'/tmp'+str(thread)+'-pingable.json')
 
     def masscan(self):
         print("Generating json")
