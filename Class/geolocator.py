@@ -64,7 +64,7 @@ class Geolocator(Base):
                 print("Not found in",location['name'])
 
     def masscanFiles(self,files,thread):
-        list,diff = {},0
+        dataList,diff = {},0
         for index, file in enumerate(files):
             print(f"Thread {thread} {index} of {len(files)} files")
             current = int(datetime.now().timestamp())
@@ -83,20 +83,25 @@ class Geolocator(Base):
                         if lookup[0] == None: continue
                         subs = self.networkToSubs(lookup[1])
                         currentSub = lookup[1]
-                        list[lookup[1]] = {}
+                        dataList[lookup[1]] = {}
                         lastSub = 0
-                        for sub in subs: list[lookup[1]][sub] = []
+                        for sub in subs: dataList[lookup[1]][sub] = []
                     if len(subs) == 1:
-                        if len(list[lookup[1]][lookup[1]]) > 20: continue
-                        list[lookup[1]][lookup[1]].append(ip)
-                        continue
-                    for iSub, sub in enumerate(subs):
-                        if iSub < lastSub: continue
-                        if ipaddress.IPv4Address(ip) in ipaddress.IPv4Network(sub):
-                            if len(list[lookup[1]][sub]) > 20: break
-                            list[lookup[1]][sub].append(ip)
-                            lastSub = iSub
-                            break
+                        if len(dataList[lookup[1]][lookup[1]]) > 20: continue
+                        dataList[lookup[1]][lookup[1]].append(ip)
+                    else:
+                        for iSub, sub in enumerate(subs):
+                            if iSub < lastSub: continue
+                            if ipaddress.IPv4Address(ip) in ipaddress.IPv4Network(sub):
+                                if len(dataList[lookup[1]][sub]) > 20: break
+                                dataList[lookup[1]][sub].append(ip)
+                                lastSub = iSub
+                                break
+            #filter
+            print(f"Thread {thread} Filtering list")
+            for prefix in dataList:
+                for sub in list(dataList[prefix]):
+                    if not dataList[prefix][sub]: del dataList[prefix][sub]
             diff += int(datetime.now().timestamp()) - current
             devidor = 1 if index == 0 else index
             print(f"Thread {thread} Finished in approximately {round((diff / devidor) * (len(files) - index) / 60)} minute(s)")
