@@ -1,3 +1,4 @@
+from tqdm.contrib.concurrent import process_map
 import geoip2.database, pyasn, json, sys
 
 #python3 cutter.py country
@@ -12,22 +13,31 @@ asndb = pyasn.pyasn('../asn.dat')
 export = []
 filter = []
 
-print("Running")
-for subnet,data in pingable.items():
+def classify(data):
+    global reader
+    ips = []
     for slicedSubnet in data:
         for ip in data[slicedSubnet]:
-            if slicedSubnet in filter: continue
-            lookup = asndb.lookup(ip)
+            #lookup = asndb.lookup(ip)
             try:
                 response = reader.country(ip)
-                if response.country.iso_code ==  sys.argv[1]: 
-                    print("Adding",ip)
-                    export.append(ip)
+                if response.country.iso_code ==  sys.argv[1]:  ips.append(ip)
             except Exception as e:
                 pass
             finally:
-                filter.append(slicedSubnet)
                 break
+    return ips
+
+print("Preparing")
+sliced = []
+for subnet,data in pingable.items(): sliced.append(data)
+del pingable
+print("Running")
+results = process_map(classify, sliced, max_workers=2,chunksize=10)
+print("Saving")
+for row in results:
+    for ip in row:
+        export.append(ip)
 
 with open(f"{sys.argv[1]}.json", 'w') as f:
     json.dump(export, f)
