@@ -12,18 +12,21 @@ asndb = pyasn.pyasn('../asn.dat')
 export = []
 filter = []
 
-for subnet,ips in pingable.items():
-    print("Resolving",subnet)
-    lookup = asndb.lookup(ips[0])
-    print("ASN",lookup[0])
-    if lookup[0] in filter: continue
-    filter.append(lookup[0])
-    try:
-        response = reader.country(ips[0])
-        if response.country.iso_code ==  sys.argv[1]: export.append(ips[0])
-        print("Adding",ips[0])
-    except Exception as e:
-        print("Skipping",subnet)
+print("Running")
+for subnet,data in pingable.items():
+    for slicedSubnet in data:
+        for ip in data[slicedSubnet]:
+            if slicedSubnet in filter: continue
+            lookup = asndb.lookup(ip)
+            try:
+                response = reader.country(ip)
+                if response.country.iso_code ==  sys.argv[1]: 
+                    print("Adding",ip)
+                    export.append(ip)
+                filter.append(slicedSubnet)
+                break
+            except Exception as e:
+                break
 
 with open("targets.json", 'w') as f:
     json.dump(export, f)
