@@ -1,5 +1,8 @@
 import subprocess, json, sys, re
 
+peak = float(sys.argv[1])
+print(f"Latency: {peak}")
+
 with open("targets.json", 'r') as f:
     targets =  json.load(f)
 
@@ -10,11 +13,13 @@ while True:
     fping = ["fping", "-c", "5"]
     for target in targets[count:count+50]:
         fping.append(target)
-    print("running",fping)
+    print(f"Running {count}/{len(targets)}")
     p = subprocess.run(fping, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False)
     parsed = re.findall("([0-9.]+).*?([0-9]+.[0-9]).*?([0-9])% loss",p.stdout.decode('utf-8'), re.MULTILINE)
     for ip,ms,loss in parsed:
-        if float(ms) < float(sys.argv[1]) and ip not in match: match.append(ip)
+        if float(ms) < peak and ip not in match: 
+            print(f"Found {ip}")
+            match.append(ip)
     count = count + 50
     with open("match.json", 'w') as f:
         json.dump(match, f)

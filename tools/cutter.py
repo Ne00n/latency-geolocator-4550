@@ -39,5 +39,5 @@ for row in results:
     for ip in row:
         export.append(ip)
 
-with open(f"{sys.argv[1]}.json", 'w') as f:
+with open("targets.json", 'w') as f:
     json.dump(export, f)
