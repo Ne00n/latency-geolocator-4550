@@ -1,7 +1,8 @@
 import subprocess, json, sys, re
 
-peak = float(sys.argv[1])
-print(f"Latency: {peak}")
+min = float(sys.argv[1])
+max = float(sys.argv[2])
+print(f"Latency: {min}/{max}")
 
 with open("targets.json", 'r') as f:
     targets =  json.load(f)
@@ -17,7 +18,7 @@ while True:
     parsed = re.findall("([0-9.]+).*?([0-9]+.[0-9]|timed out).*?([0-9]+)% loss",p.stdout.decode('utf-8'), re.MULTILINE)
     for ip,ms,loss in parsed:
         if "timed out" in ms: continue
-        if float(ms) < peak and ip not in match: 
+        if float(ms) > min and float(ms) < max and ip not in match: 
             print(f"Found {ip}")
             match.append(ip)
     count = count + 50
