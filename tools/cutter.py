@@ -21,7 +21,7 @@ def classify(data):
             #lookup = asndb.lookup(ip)
             try:
                 response = reader.country(ip)
-                if response.country.iso_code ==  sys.argv[1]:  ips.append(ip)
+                if response.country.iso_code ==  sys.argv[1]: ips.append(ip)
             except Exception as e:
                 pass
             finally:
