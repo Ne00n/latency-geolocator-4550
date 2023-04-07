@@ -23,10 +23,11 @@ for subnet,data in pingable.items():
                 if response.country.iso_code ==  sys.argv[1]: 
                     print("Adding",ip)
                     export.append(ip)
+            except Exception as e:
+                pass
+            finally:
                 filter.append(slicedSubnet)
                 break
-            except Exception as e:
-                break
 
-with open("targets.json", 'w') as f:
+with open(f"{sys.argv[1]}.json", 'w') as f:
     json.dump(export, f)
