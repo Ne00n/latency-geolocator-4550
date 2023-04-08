@@ -1,17 +1,16 @@
 import subprocess, json, sys, re
 
-carriers = {9002:"RETN",3320:"DTAG",3257:"GTT",3356:"Lumen",2914:"NTT",3491:"PCCW",6453:"TATA",1299:"Telia"}
-
 def mtr(target):
-    mtr = ['mtr','--aslookup','--report','--report-cycles','5', target]
+    mtr = ['mtr','--aslookup','--report','--report-cycles','5','--report-wide', target]
     return subprocess.run(mtr, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False).stdout.decode('utf-8')
 
 def classify(mtr):
-    carriersOnRoute = ""
+    carriersOnRoute = []
     for line in mtr.split('\n'):
-        asn = re.findall("AS([0-9]+)",line, re.MULTILINE)
-        if asn and int(asn[0]) in carriers:
-            carriersOnRoute += f"{carriers[int(asn[0])]} "
+        asn = re.findall("AS([0-9]+)(.*?)[0-9]+\.[0-9]+%",line, re.MULTILINE)
+        if asn:
+            host = asn[0][1].replace(" ","")
+            carriersOnRoute.append(f"{asn[0][0]}, {host}")
     return carriersOnRoute
 
 min = float(sys.argv[1])
