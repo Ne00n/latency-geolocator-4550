@@ -49,6 +49,7 @@ def classify(data):
                 break
     return ips
 
+#some parts may be written by ChatGPT4
 def create_sorted_ips(ip_ranges):
     sorted_ips = []
     for ip_range in ip_ranges:
