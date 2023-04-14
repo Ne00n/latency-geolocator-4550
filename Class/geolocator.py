@@ -45,6 +45,26 @@ class Geolocator(Base):
     def dumpDatabase(self):
         return list(self.connection.execute("SELECT * FROM subnets"))
 
+    def fill(self):
+        print("Loading","pingable.json")
+        pingable = open('pingable.json', 'r')
+        pingable = json.load(pingable)
+        with open('asn.dat') as file:
+            for line in file:
+                if ";" in line: continue
+                line = line.rstrip()
+                subnet, asn = line.split("\t")
+                if not subnet in pingable:
+                    print(f"Adding {subnet}")
+                    pingable[subnet] = {}
+                    subs = self.networkToSubs(subnet)
+                    for sub in subs:
+                        ip, prefix = sub.split("/")
+                        pingable[subnet][sub] = [ip]
+                else:
+                    print(f"{subnet} already inside")
+        self.saveJson(pingable,os.getcwd()+'/pingable.json')
+
     def debug(self,ip):
         lookup = self.asndb.lookup(ip)
         print("Subnet",lookup[1])
