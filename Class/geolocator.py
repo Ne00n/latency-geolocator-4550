@@ -46,6 +46,8 @@ class Geolocator(Base):
         return list(self.connection.execute("SELECT * FROM subnets"))
 
     def fill(self):
+        #ignore DoD
+        ignore = ["7","11","21","22","26","28","29","30","33"]
         print("Loading","pingable.json")
         pingable = open('pingable.json', 'r')
         pingable = json.load(pingable)
@@ -55,6 +57,7 @@ class Geolocator(Base):
                 if ";" in line: continue
                 line = line.rstrip()
                 subnet, asn = line.split("\t")
+                if any(map(subnet.startswith, ignore)): continue
                 if not subnet in pingable:
                     print(f"Adding {subnet}")
                     notPingable[subnet] = {}
