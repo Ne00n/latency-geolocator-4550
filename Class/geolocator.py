@@ -49,6 +49,7 @@ class Geolocator(Base):
         print("Loading","pingable.json")
         pingable = open('pingable.json', 'r')
         pingable = json.load(pingable)
+        notPingable = {}
         with open('asn.dat') as file:
             for line in file:
                 if ";" in line: continue
@@ -56,14 +57,14 @@ class Geolocator(Base):
                 subnet, asn = line.split("\t")
                 if not subnet in pingable:
                     print(f"Adding {subnet}")
-                    pingable[subnet] = {}
+                    notPingable[subnet] = {}
                     subs = self.networkToSubs(subnet)
                     for sub in subs:
                         ip, prefix = sub.split("/")
-                        pingable[subnet][sub] = [ip]
+                        notPingable[subnet][sub] = [ip]
                 else:
                     print(f"{subnet} already inside")
-        self.saveJson(pingable,os.getcwd()+'/notPingable.json')
+        self.saveJson(notPingable,os.getcwd()+'/notPingable.json')
 
     def debug(self,ip):
         lookup = self.asndb.lookup(ip)
