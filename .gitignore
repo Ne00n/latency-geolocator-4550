@@ -1,8 +1,6 @@
 rib.*
 asn.dat
-pingable.json
-locations.json
-networks.json
+*.json
 config
 *.mmdb
 tmp*
