@@ -2,3 +2,7 @@
 *.CSV
 test.py
 dc.conf
+db.json
+country.json
+match.json
+targets.json
