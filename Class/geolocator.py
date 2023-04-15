@@ -63,7 +63,7 @@ class Geolocator(Base):
                         pingable[subnet][sub] = [ip]
                 else:
                     print(f"{subnet} already inside")
-        self.saveJson(pingable,os.getcwd()+'/pingable.json')
+        self.saveJson(pingable,os.getcwd()+'/notPingable.json')
 
     def debug(self,ip):
         lookup = self.asndb.lookup(ip)
