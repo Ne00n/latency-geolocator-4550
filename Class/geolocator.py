@@ -64,6 +64,8 @@ class Geolocator(Base):
                     subs = self.networkToSubs(subnet)
                     for sub in subs:
                         ip, prefix = sub.split("/")
+                        ip = ip[:-1]
+                        ip = f"{ip}1"
                         notPingable[subnet][sub] = [ip]
                 else:
                     print(f"{subnet} already inside")
