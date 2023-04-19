@@ -8,3 +8,4 @@ match.json
 targets.json
 config.json
 decisions.json
+*.BIN
