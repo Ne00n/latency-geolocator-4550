@@ -243,8 +243,8 @@ class Geolocator(Base):
             command,commands = "ssh root@"+location['ip']+" fping -c2",[]
             for index in range(0,multiplicator):
                 if ips[index*1000:(index+1)*1000]: commands.append(f"{command} {' '.join(ips[index*1000:(index+1)*1000])}")
-            print(location['name'],f"Running fping with {len(commands)} threads")
-            pool = multiprocessing.Pool(processes = 4)
+            print(location['name'],f"Running fping with 1 threads")
+            pool = multiprocessing.Pool(processes = 1)
             results = pool.map(self.cmd, commands)
             latency = self.getAvrg(results[0][1])
             for index in range(1,len(results)): latency.update(self.getAvrg(results[index][1]))
