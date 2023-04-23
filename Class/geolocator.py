@@ -34,7 +34,9 @@ class Geolocator(Base):
         self.connection.execute("""CREATE TABLE subnets (subnet, ips)""")
         for row in pingable.items():
             for subnet in row[1]:
-                self.connection.execute(f"INSERT INTO subnets VALUES ('{subnet}', '{json.dumps(row[1][subnet])}')")
+                ips = row[1][subnet]
+                ips = ','.join(ips)
+                self.connection.execute(f"INSERT INTO subnets VALUES ('{subnet}', '{ips}')")
         self.connection.commit()
 
     def getIPsFromSubnet(self,connection,subnet,start=0,end=0):
@@ -168,12 +170,12 @@ class Geolocator(Base):
         self.saveJson(pingable,os.getcwd()+'/pingable.json')
 
     def getIPs(self,connection,row,length=1000):
-        list = []
+        ips = []
         pingable = self.getIPsFromSubnet(connection,"",row,length)
         for row in pingable:
-            ips = row[1].split(",")
-            list.append(ips[0])
-        return list
+            data = row[1].split(",")
+            ips.append(data[0])
+        return ips
 
     def SubnetsToRandomIP(self,list,networks):
         mapping,ips = {},[]
