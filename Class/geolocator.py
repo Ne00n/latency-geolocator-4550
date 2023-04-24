@@ -28,13 +28,14 @@ class Geolocator(Base):
     def loadPingable(self,offloading=True):
         print("Loading pingable.json")
         pingable = self.loadJson(os.getcwd()+'/pingable.json')
-        self.pingableLength = len(pingable)
         if offloading is False:
             self.pingable = pingable
             return
         print("Offloading pingable.json into SQLite Database")
         self.connection.execute("""CREATE TABLE subnets (subnet, sub, ips)""")
+        self.pingableLength = 0
         for subnet in pingable:
+            self.pingableLength += len(pingable[subnet])
             for sub,ips in pingable[subnet].items():
                 ips = ','.join(ips)
                 self.connection.execute(f"INSERT INTO subnets VALUES ('{subnet}','{sub}', '{ips}')")
