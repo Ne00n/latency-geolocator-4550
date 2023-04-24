@@ -232,14 +232,14 @@ class Geolocator(Base):
             subnet[self.mapping[ip]] = ms
         return subnet,subnetCache
 
-    def fpingLocation(self,location,barrier=False,update=False,routing=False,networks=[],multiplicator=4):
+    def fpingLocation(self,location,barrier=False,update=False,networks=[],multiplicator=4):
         loaded,subnetCache,length,row,map = False,{},self.pingableLength,0,{}
         connection = sqlite3.connect("file:subnets?mode=memory&cache=shared", uri=True)
         if update: length = len(self.notPingable)
         while row < length:
             current = int(datetime.now().timestamp())
-            if update is False and routing is False:  ips = self.getIPs(connection,row,1000 * multiplicator)
-            if update is True or routing is True: ips = self.SliceAndDice(self.notPingable,row,1000 * multiplicator)
+            if update is False:  ips = self.getIPs(connection,row,1000 * multiplicator)
+            if update is True: ips = self.SliceAndDice(self.notPingable,row,1000 * multiplicator)
             command,commands = "ssh root@"+location['ip']+" fping -c2",[]
             for index in range(0,multiplicator):
                 if ips[index*1000:(index+1)*1000]: commands.append(f"{command} {' '.join(ips[index*1000:(index+1)*1000])}")
@@ -249,8 +249,6 @@ class Geolocator(Base):
             latency = self.getAvrg(results[0][1])
             for index in range(1,len(results)): latency.update(self.getAvrg(results[index][1]))
             subnets,subnetCache = self.mapToSubnet(latency,networks,subnetCache)
-            if routing is True:
-                map = {**map, **latency}
             elif update is False:
                 print(location['name'],"Updating",location['name']+"-subnets.csv")
                 csv = self.dictToCsv(subnets)
@@ -278,7 +276,6 @@ class Geolocator(Base):
             diff = int(datetime.now().timestamp()) - current
             print(location['name'],"Finished in approximately",round(diff * ( (length - row) / (1000 * multiplicator)) / 60),"minute(s)")
         print(location['name'],"Done")
-        if routing: return map
 
     def checkFiles(self,type="rebuild"):
         run,yall = {},False
@@ -328,7 +325,7 @@ class Geolocator(Base):
         threads = []
         for location in self.locations:
             if len(run) > 0 and location['name'] in run:
-                threads.append(Thread(target=self.fpingLocation, args=([location,barrier,False,False])))
+                threads.append(Thread(target=self.fpingLocation, args=([location,barrier,False])))
         self.startJoin(threads)
 
     def generate(self):
@@ -478,54 +475,6 @@ class Geolocator(Base):
             threads = []
             for location in self.locations:
                 if len(run) > 0 and location['name'] in run:
-                    threads.append(Thread(target=self.fpingLocation, args=([location,barrier,True,False,networks])))
+                    threads.append(Thread(target=self.fpingLocation, args=([location,barrier,True,networks])))
             self.startJoin(threads)
             current += 1
-
-    def routing(self):
-        queue,outQueue = Queue(),Queue()
-        print("Routing")
-        print("Loading asn.dat")
-        with open(os.getcwd()+'/asn.dat', 'r') as f:
-            asn = f.read()
-        lines = asn.splitlines()
-        subnets = []
-        for line in lines:
-            data = line.split("\t")
-            if len(data) == 1: continue
-            net = data[0].split("/")
-            if int(net[1]) <= 20: subnets.append(data[0])
-        print("Found",len(subnets),"subnets")
-        self.loadPingable(False)
-        results = {'ips':[],'networks':{}}
-        for index, subnet in enumerate(subnets):
-            if subnet  not in self.pingable: continue
-            data = self.pingable[subnet]
-            for net, ips in data.items():
-                for index, ip in enumerate(ips):
-                    results['ips'].append(ip)
-                    results['networks'][ip] = {'latency':0,'subnet':net,'network':subnet}
-                    break
-        random.shuffle(results['ips'])
-        self.pingableLength = len(results['ips'])
-        self.notPingable = results['ips']
-        print("Starting measurements")
-        fpingResults = self.fpingLocation(self.locations[0],False,False,True)
-        print("Processing results")
-        for ip,latency in fpingResults.items(): results['networks'][ip]['latency'] = latency
-        data = {}
-        for ip,row in results['networks'].items():
-            if row['network'] not in data: data[row['network']] = {}
-            data[row['network']][ip] = {}
-            data[row['network']][ip]['latency'] = row['latency']
-            data[row['network']][ip]['subnet'] = row['subnet']
-        networks = []
-        for network,ips in data.items():
-            initial,flagged = 0,False
-            for ip,latency in ips.items():
-                if latency['latency'] == "retry": continue
-                if initial == 0: initial = float(latency['latency'])
-                if float(latency['latency']) > (initial + 20) or float(latency['latency']) < (initial - 20): flagged = True
-            if flagged: networks.append(network)
-        print("Saving","networks.json")
-        self.saveJson(networks,os.getcwd()+'/networks.json')

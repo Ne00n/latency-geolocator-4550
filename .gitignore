@@ -6,3 +6,4 @@ tmp*
 notPingable.json
 pingable.json
 locations.json
+test.py
