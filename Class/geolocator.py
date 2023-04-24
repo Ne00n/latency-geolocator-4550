@@ -239,7 +239,7 @@ class Geolocator(Base):
             current = int(datetime.now().timestamp())
             if update is False:  ips,mapping = self.getIPs(connection,row,1000 * multiplicator)
             if update is True: ips = self.SliceAndDice(self.notPingable,row,1000 * multiplicator)
-            command,commands = "ssh root@"+location['ip']+" fping -c2",[]
+            command,commands = f"ssh {location['user']}@{location['ip']} fping -c2",[]
             loops = math.ceil(len(ips) / 1000 )
             for index in range(0,loops):
                 if ips[index*1000:(index+1)*1000]: commands.append(f"{command} {' '.join(ips[index*1000:(index+1)*1000])}")
