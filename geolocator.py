@@ -23,5 +23,3 @@ elif sys.argv[1] == "rerun":
         geolocator.rerun(sys.argv[2],sys.argv[3])
     else:
         geolocator.rerun(sys.argv[2])
-elif sys.argv[1] == "compress":
-    geolocator.compress()

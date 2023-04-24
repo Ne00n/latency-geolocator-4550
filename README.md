@@ -61,18 +61,9 @@ If one machine dies, it gets routed to the next one (based on latency results) a
 Depending on your use case, you should adjust it, you can of course use the full list,<br>
 however more memory usage, eventually you hit 2GB+ and the boot times will be painful.<br>
 
-4. Compress the [gdnsd](https://github.com/gdnsd/gdnsd) datacenter subnet mapping file
-```
-python3 geolocator.py compress
-```
-The idea behind compressing is, putting multiple /24, /23, /22 or /21 subnets into bigger ones.<br>
-This Reduces memory usage of gdnsd and boot time, however should have no impact on routing.<br>
-Besides if there is no data for a specific subnet, the subnet could be included in a bigger one with data and shitrouted.<br>
-If there is data, it will be checked first, if the routing is the same, otherwise the subnet will be left as is.<br>
-
 TLDR: makes the config shorter<br>
 
-5. #Lunch [gdnsd](https://github.com/gdnsd/gdnsd)
+4. #Lunch [gdnsd](https://github.com/gdnsd/gdnsd)
 ```
 cp config /etc/gdnsd/
 cp myahcdn.net /etc/gdnsd/zones

@@ -387,47 +387,6 @@ class Geolocator(Base):
                 return count
         return count
 
-    def compress(self):
-        print("Compress")
-        print("Loading dc.conf")
-        with open(os.getcwd()+'/data/dc.conf', 'r') as f:
-            dc = f.read()
-        lines = dc.split("\n")
-        dc = []
-
-        print("Parsing dc.conf")
-        for line in lines:
-            if line == "": continue
-            subnet, targets = line.split(' => ')
-            subsub, prefix = subnet.split("/")
-            dc.append({"subnet":subsub,"prefix":prefix,"targets":targets})
-
-        print("Compressing dc.conf")
-        for index,data in enumerate(dc):
-            print(f"Done {index} of {len(dc)}")
-            if index +1 > len(dc) -1 or data == "" or dc[index+1] == "": continue
-            if self.followingSub(index,dc):
-                if self.sameTargets(dc[index]['targets'],dc[index+1]['targets']):
-                    total = self.allFollowingSubs(dc,index)
-                    subnets = []
-                    targets = dc[index:index+total+1]
-                    for entry in targets:  subnets.append(f"{entry['subnet']}/{entry['prefix']}")
-                    results = list(aggregate_prefixes(subnets))
-                    for vIndex, result in enumerate(results):
-                        sub, prefix = str(result).split("/")
-                        dc[index+vIndex]['subnet'] = sub
-                        dc[index+vIndex]['prefix'] = prefix
-                    for i in range(index+len(results), index+len(subnets)): dc[i] = ""
-
-        print("Saving","dc.conf")
-        export = ""
-        for data in dc:
-            if data == "": continue
-            export += f"{data['subnet']}/{data['prefix']} => {data['targets']}\n"
-        with open(os.getcwd()+'/data/dc.conf', 'w') as out:
-            out.write(export)
-
-
     def rerun(self,type="retry",latency=0):
         print("Rerun")
 
