@@ -34,7 +34,6 @@ class Geolocator(Base):
         self.connection.execute("""CREATE TABLE subnets (subnet, sub, ips)""")
         for subnet in pingable:
             for sub,ips in pingable[subnet].items():
-                ips = row[1][subnet]
                 ips = ','.join(ips)
                 self.connection.execute(f"INSERT INTO subnets VALUES ('{subnet}','{sub}', '{ips}')")
         self.connection.commit()
