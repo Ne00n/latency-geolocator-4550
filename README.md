@@ -51,17 +51,10 @@ python3 geolocator.py geolocate
 ```
 This process is threaded, independent how many locations you have, it will likely take 60-80 minutes<br />
 
-3. Generate the [gdnsd](https://github.com/gdnsd/gdnsd) datacenter subnet mapping file
+3. Generate the geo.mmdb file
 ```
 python3 geolocator.py generate
 ```
-To reduce memory usage and gdnsd boot time, you can specify the failover nodes.<br>
-If one machine dies, it gets routed to the next one (based on latency results) and so on, until all of them die, then it gets forwarded to the next available.<br>
-
-Depending on your use case, you should adjust it, you can of course use the full list,<br>
-however more memory usage, eventually you hit 2GB+ and the boot times will be painful.<br>
-
-TLDR: makes the config shorter<br>
 
 4. #Lunch [gdnsd](https://github.com/gdnsd/gdnsd)
 ```

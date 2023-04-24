@@ -1,13 +1,15 @@
 import ipaddress, random, pyasn, sqlite3, time, json, math, sys, re, os
 from aggregate_prefixes import aggregate_prefixes
 from multiprocessing import Process, Queue
-import multiprocessing
+from netaddr import IPNetwork, IPSet
+from mmdb_writer import MMDBWriter
 from datetime import datetime
 from netaddr import IPNetwork
 from threading import Thread
 from threading import Barrier
 from Class.base import Base
 from shutil import copyfile
+import multiprocessing
 import geoip2.database
 
 class Geolocator(Base):
@@ -318,35 +320,42 @@ class Geolocator(Base):
 
     def generate(self):
         print("Generate")
-        print("Less failover nodes will reduce the overall memory usage")
-        failover = int(input("How many failover nodes? suggestion: 2: "))
-        print("Loading asn.dat")
-        with open(os.getcwd()+'/asn.dat', 'r') as f:
-            asn = f.read()
-        subnets,routing,export = {},{},""
+        subnets,latency,export = {},{},{}
+        print("Preparing Build")
         for location in self.locations:
             print("Loading",location['name']+"-subnets.csv")
             with open(os.getcwd()+'/data/'+location['name']+"-subnets.csv", 'r') as f:
                 file = f.read()
-            dict = {}
+            map = {}
             for row in file.splitlines():
                 line = row.split(",")
-                dict[line[0]] = line[1]
-            subnets[location['id']] = dict
+                map[line[0]] = line[1]
+            subnets[location['id']] = map
+        print("Building geo.mmdb")
         firstNode = self.locations[0]['id']
-        print("Building dc.conf")
         for subnet in subnets[firstNode]:
-            latency = {}
             for location in self.locations:
+                if not subnet in subnets[location['id']]:
+                    print(f"Warning unable to find {subnet} in {location['country']}")
+                    continue
                 if subnets[location['id']][subnet] == "retry": continue
-                latency[location['id']] = float(subnets[location['id']][subnet])
-            if not latency: continue
-            routing[subnet] = sorted(latency, key=lambda key: latency[key])
-        print("Saving","dc.conf")
-        for row in routing.items():
-            export += row[0]+" => ["+','.join(str(v) for v in row[1][:failover])+"]\n"
-        with open(os.getcwd()+'/data/dc.conf', 'w+') as out:
-            out.write(export)
+                if not subnet in latency: latency[subnet] = {"location":None,"latency":None}
+                ms = subnets[location['id']][subnet]
+                if latency[subnet]['latency'] == None or float(ms) < float(latency[subnet]['latency']): 
+                    latency[subnet] = {"location":location['id'],"latency":ms}
+        for subnet,data in latency.items():
+            if not data['location'] in export: export[data['location']] = {"subnets":[]}
+            export[data['location']]['subnets'].append(subnet)
+        print("Saving geo.mmdb")
+        writer = MMDBWriter(4, 'GeoIP2-City', languages=['EN'], description="yammdb")
+        for location,data in export.items():
+            locationData = self.getDataFromLocationID(location)
+            writer.insert_network(IPSet(data['subnets']), {'country':{'iso_code':locationData['country']},'location':{"latitude":float(locationData['latitude']),"longitude":float(locationData['longitude'])}})
+        writer.to_db_file('geo.mmdb')
+
+    def getDataFromLocationID(self,location):
+        for row in self.locations:
+            if row['id'] == location: return row
 
     def followingSub(self,index,dc):
         currentSub = dc[index]['subnet']
