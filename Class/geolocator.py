@@ -32,7 +32,7 @@ class Geolocator(Base):
             return
         print("Offloading pingable.json into SQLite Database")
         self.connection.execute("""CREATE TABLE subnets (subnet, sub, ips)""")
-        for subnet in pingable:
+        for subnet in pingable.items():
             for sub,ips in pingable[subnet]:
                 ips = row[1][subnet]
                 ips = ','.join(ips)
