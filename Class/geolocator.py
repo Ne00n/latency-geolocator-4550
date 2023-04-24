@@ -32,8 +32,8 @@ class Geolocator(Base):
             return
         print("Offloading pingable.json into SQLite Database")
         self.connection.execute("""CREATE TABLE subnets (subnet, sub, ips)""")
-        for subnet in pingable.items():
-            for sub,ips in pingable[subnet]:
+        for subnet in pingable:
+            for sub,ips in pingable[subnet].items():
                 ips = row[1][subnet]
                 ips = ','.join(ips)
                 self.connection.execute(f"INSERT INTO subnets VALUES ('{subnet}','{sub}', '{ips}')")
@@ -301,23 +301,14 @@ class Geolocator(Base):
                 run[location['name']] = "y"
         return run
 
-    def barrier(self,run):
-        print("Waits for the slowest thread, makes measurements more accurate")
-        while True:
-            answer = input("Use barriers? (y/n): ")
-            if answer == "y" or answer == "n": break
-        if answer != "y": return False
+    def geolocate(self):
+        print("Geolocate")
+        run = self.checkFiles()
         barriers = 0
         for location in self.locations:
             if len(run) > 0 and location['name'] in run: barriers += 1
 
         barrier = Barrier(barriers)
-        return barrier
-
-    def geolocate(self):
-        print("Geolocate")
-        run = self.checkFiles()
-        barrier = self.barrier(run)
 
         self.loadPingable()
         print("Got",str(self.pingableLength),"subnets")
