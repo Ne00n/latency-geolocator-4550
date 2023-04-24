@@ -1,4 +1,4 @@
-import ipaddress, random, pyasn, sqlite3, time, json, sys, re, os
+import ipaddress, random, pyasn, sqlite3, time, json, math, sys, re, os
 from aggregate_prefixes import aggregate_prefixes
 from multiprocessing import Process, Queue
 import multiprocessing
@@ -237,9 +237,10 @@ class Geolocator(Base):
             if update is False:  ips,mapping = self.getIPs(connection,row,1000 * multiplicator)
             if update is True: ips = self.SliceAndDice(self.notPingable,row,1000 * multiplicator)
             command,commands = "ssh root@"+location['ip']+" fping -c2",[]
-            for index in range(0,multiplicator):
+            loops = math.ceil(len(ips) / (1000 * multiplicator))
+            for index in range(0,loops):
                 if ips[index*1000:(index+1)*1000]: commands.append(f"{command} {' '.join(ips[index*1000:(index+1)*1000])}")
-            print(location['name'],f"Running fping with {multiplicator} threads")
+            print(location['name'],f"Running fping with {multiplicator} threads and {len(commands)} batches")
             pool = multiprocessing.Pool(processes = multiplicator)
             results = pool.map(self.cmd, commands)
             latency = self.getAvrg(results[0][1])
