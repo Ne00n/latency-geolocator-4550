@@ -228,7 +228,7 @@ class Geolocator(Base):
             subnets[lookup] = ms
         return subnets
 
-    def fpingLocation(self,location,barrier=False,update=False,multiplicator=4):
+    def fpingLocation(self,location,barrier=False,update=False,multiplicator=2):
         loaded,mapping,length,row,map = False,{},self.pingableLength,0,{}
         connection = sqlite3.connect("file:subnets?mode=memory&cache=shared", uri=True)
         if update: length = len(self.notPingable)
@@ -239,17 +239,13 @@ class Geolocator(Base):
             command,commands = "ssh root@"+location['ip']+" fping -c2",[]
             for index in range(0,multiplicator):
                 if ips[index*1000:(index+1)*1000]: commands.append(f"{command} {' '.join(ips[index*1000:(index+1)*1000])}")
-            print(location['name'],f"Running fping with 2 threads")
-            pool = multiprocessing.Pool(processes = 2)
+            print(location['name'],f"Running fping with {multiplicator} threads")
+            pool = multiprocessing.Pool(processes = multiplicator)
             results = pool.map(self.cmd, commands)
-            answers = 0
             latency = self.getAvrg(results[0][1])
-            answers += len(results[0][1]) 
-            for index in range(1,len(results)):
-                answers += len(results[index][1]) 
-                latency.update(self.getAvrg(results[index][1]))
-            print(f"Got {answers} from {len(ips)}")
+            for index in range(1,len(results)): latency.update(self.getAvrg(results[index][1])) 
             subnets = self.mapToSubnet(latency,mapping)
+            print(f"Got {len(subnets)} from {1000 * multiplicator}")
             if update is False:
                 print(location['name'],"Updating",location['name']+"-subnets.csv")
                 csv = self.dictToCsv(subnets)
