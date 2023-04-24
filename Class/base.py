@@ -36,7 +36,7 @@ class Base:
     def getAvrg(self,results):
         latency = {}
         for row in results:
-            parsed = re.findall("([0-9.]+).*?:.*?([0-9+])%(.*?\/([0-9.]+))?",row[0], re.MULTILINE)
+            parsed = re.findall("([0-9.]+).*?:.*?([0-9+])%(.*?\/([0-9.]+))?",row[1], re.MULTILINE)
             for line in parsed:
                 if line[3] != "":
                     latency[line[0]] = line[3]
