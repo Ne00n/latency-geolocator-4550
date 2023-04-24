@@ -169,14 +169,17 @@ class Geolocator(Base):
         self.saveJson(pingable,os.getcwd()+'/pingable.json')
 
     def getIPs(self,connection,row,length=1000):
-        ips = []
+        ips,mapping = [],{}
         pingable = self.getIPsFromSubnet(connection,"",row,length)
         for row in pingable:
-            data = row[1].split(",")
-            ips.append(data[0])
-        return ips
+            data = row[2].split(",")
+            for index, ip in enumerate(data):
+                ips.append(ip)
+                mapping[ip] = row[1]
+                if index > 10: break
+        return ips,mapping
 
-    def SubnetsToRandomIP(self,list,networks):
+    def SubnetsToRandomIP(self,list):
         mapping,ips = {},[]
         #get the full pingable.json
         subnetsList = self.dumpDatabase()
@@ -190,8 +193,6 @@ class Geolocator(Base):
             #get random ip
             randomIP = random.choice(ipaaaays)
             ips.append(randomIP)
-            #if the subnet is not in networks we just use a random ip
-            if subnet not in networks: continue
             mapping[randomIP] = subnet
             #caching
             if not subnet in self.subnetCache:
@@ -217,27 +218,23 @@ class Geolocator(Base):
                         break
         return ips,mapping
 
-    def mapToSubnet(self,latency,networks,subnetCache):
-        subnet = {}
+    def mapToSubnet(self,latency,mapping):
+        subnets = {}
         for ip, ms in latency.items():
-            lookup = self.asndb.lookup(ip)
-            if lookup[1] not in networks:
-                subnet[lookup[1]] = ms
-                continue
-            if lookup[1] not in subnetCache:
-                subnetCache[lookup[1]] = 1
-                subnet[lookup[1]] = ms
-                continue
-            subnet[self.mapping[ip]] = ms
-        return subnet,subnetCache
+            if mapping:
+                lookup = mapping[ip]
+            else:
+                lookup = self.mapping[ip]
+            subnets[lookup] = ms
+        return subnets
 
-    def fpingLocation(self,location,barrier=False,update=False,networks=[],multiplicator=4):
-        loaded,subnetCache,length,row,map = False,{},self.pingableLength,0,{}
+    def fpingLocation(self,location,barrier=False,update=False,multiplicator=4):
+        loaded,mapping,length,row,map = False,{},self.pingableLength,0,{}
         connection = sqlite3.connect("file:subnets?mode=memory&cache=shared", uri=True)
         if update: length = len(self.notPingable)
         while row < length:
             current = int(datetime.now().timestamp())
-            if update is False:  ips = self.getIPs(connection,row,1000 * multiplicator)
+            if update is False:  ips,mapping = self.getIPs(connection,row,1000 * multiplicator)
             if update is True: ips = self.SliceAndDice(self.notPingable,row,1000 * multiplicator)
             command,commands = "ssh root@"+location['ip']+" fping -c2",[]
             for index in range(0,multiplicator):
@@ -247,7 +244,7 @@ class Geolocator(Base):
             results = pool.map(self.cmd, commands)
             latency = self.getAvrg(results[0][1])
             for index in range(1,len(results)): latency.update(self.getAvrg(results[index][1]))
-            subnets,subnetCache = self.mapToSubnet(latency,networks,subnetCache)
+            subnets = self.mapToSubnet(latency,mapping)
             if update is False:
                 print(location['name'],"Updating",location['name']+"-subnets.csv")
                 csv = self.dictToCsv(subnets)
@@ -391,7 +388,6 @@ class Geolocator(Base):
             print("Could not find GeoLite2-Country.mmdb")
 
         self.loadPingable()
-        networks = self.loadNetworks()
 
         current = 0
         while current < runs:
@@ -415,7 +411,7 @@ class Geolocator(Base):
                             print("Skipping",line[0])
             notPingable,tmp = list(set(notPingable)),""
             print("Fetching Random IPs")
-            self.notPingable,self.mapping = self.SubnetsToRandomIP(notPingable,networks)
+            self.notPingable,self.mapping = self.SubnetsToRandomIP(notPingable)
             notPingable = ""
 
             print("Found",len(self.notPingable),"subnets")
@@ -424,6 +420,6 @@ class Geolocator(Base):
             threads = []
             for location in self.locations:
                 if len(run) > 0 and location['name'] in run:
-                    threads.append(Thread(target=self.fpingLocation, args=([location,barrier,True,networks])))
+                    threads.append(Thread(target=self.fpingLocation, args=([location,barrier,True])))
             self.startJoin(threads)
             current += 1
