@@ -31,12 +31,12 @@ class Geolocator(Base):
             self.pingable = pingable
             return
         print("Offloading pingable.json into SQLite Database")
-        self.connection.execute("""CREATE TABLE subnets (subnet, ips)""")
-        for row in pingable.items():
-            for subnet in row[1]:
+        self.connection.execute("""CREATE TABLE subnets (subnet, sub, ips)""")
+        for subnet in pingable:
+            for sub,ips in pingable[subnet]:
                 ips = row[1][subnet]
                 ips = ','.join(ips)
-                self.connection.execute(f"INSERT INTO subnets VALUES ('{subnet}', '{ips}')")
+                self.connection.execute(f"INSERT INTO subnets VALUES ('{subnet}','{sub}', '{ips}')")
         self.connection.commit()
 
     def getIPsFromSubnet(self,connection,subnet,start=0,end=0):
@@ -249,7 +249,7 @@ class Geolocator(Base):
             latency = self.getAvrg(results[0][1])
             for index in range(1,len(results)): latency.update(self.getAvrg(results[index][1]))
             subnets,subnetCache = self.mapToSubnet(latency,networks,subnetCache)
-            elif update is False:
+            if update is False:
                 print(location['name'],"Updating",location['name']+"-subnets.csv")
                 csv = self.dictToCsv(subnets)
                 with open(os.getcwd()+'/data/'+location['name']+"-subnets.csv", "a") as f:
