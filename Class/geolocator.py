@@ -243,8 +243,7 @@ class Geolocator(Base):
             print(location['name'],f"Running fping with {multiplicator} threads and {len(commands)} batches")
             pool = multiprocessing.Pool(processes = multiplicator)
             results = pool.map(self.cmd, commands)
-            latency = self.getAvrg(results[0][1])
-            for index in range(1,len(results)): latency.update(self.getAvrg(results[index][1])) 
+            latency = self.getAvrg(results) 
             subnets = self.mapToSubnet(latency,mapping)
             print(f"Got {len(subnets)} from {1000 * multiplicator}")
             if update is False:

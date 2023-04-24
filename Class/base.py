@@ -33,14 +33,15 @@ class Base:
             dict[row[index]] = row[data]
         return dict
 
-    def getAvrg(self,result):
+    def getAvrg(self,results):
         latency = {}
-        parsed = re.findall("([0-9.]+).*?:.*?([0-9+])%(.*?\/([0-9.]+))?",result, re.MULTILINE)
-        for row in parsed:
-            if row[3] != "":
-                latency[row[0]] = row[3]
-            else:
-                latency[row[0]] = "retry"
+        for row in results:
+            parsed = re.findall("([0-9.]+).*?:.*?([0-9+])%(.*?\/([0-9.]+))?",row[0], re.MULTILINE)
+            for line in parsed:
+                if line[3] != "":
+                    latency[line[0]] = line[3]
+                else:
+                    latency[line[0]] = "retry"
         return latency
 
     def networkToSubs(self,subnet):
