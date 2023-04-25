@@ -197,28 +197,6 @@ class Geolocator(Base):
             randomIP = random.choice(ipaaaays)
             ips.append(randomIP)
             mapping[randomIP] = subnet
-            #caching
-            if not subnet in self.subnetCache:
-                #split the original subnet into /22
-                subs = self.networkToSubs(subnet)
-                self.subnetCache[subnet] = subs
-            else:
-                subs = self.subnetCache[subnet]
-            #counter so we don't check the same again
-            current = 0
-            #for each /22
-            for sub in subs:
-                for index, ip in enumerate(ipaaaays):
-                    #make sure we don't check the same again
-                    if index <= current: continue
-                    if ip in self.subnetIPCache: continue
-                    #check if the ip is in the given subnet
-                    if ipaddress.IPv4Address(ip) in ipaddress.IPv4Network(sub):
-                        ips.append(ip)
-                        self.subnetIPCache.append(ip)
-                        mapping[ip] = sub
-                        current = index
-                        break
         return ips,mapping
 
     def mapToSubnet(self,latency,mapping):
