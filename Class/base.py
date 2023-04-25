@@ -27,7 +27,7 @@ class Base:
             csv += str(line[0])+","+str(line[1])+"\n"
         return csv
 
-    def listToDict(self,list,index=0,data=2):
+    def listToDict(self,list,index=1,data=2):
         dict = {}
         for row in list:
             dict[row[index]] = row[data]
