@@ -248,7 +248,6 @@ class Geolocator(Base):
             results = pool.map(self.cmd, commands)
             latency = self.getAvrg(results) 
             subnets = self.mapToSubnet(latency,mapping)
-            print(f"Got {len(subnets)} from {1000 * multiplicator}")
             if update is False:
                 print(location['name'],"Updating",location['name']+"-subnets.csv")
                 csv = self.dictToCsv(subnets)
@@ -277,8 +276,8 @@ class Geolocator(Base):
             print(location['name'],"Finished in approximately",round(diff * ( (length - row) / (1000 * multiplicator)) / 60),"minute(s)")
         print(location['name'],"Done")
 
-    def checkFiles(self,type="rebuild"):
-        run,yall = {},False
+    def checkFiles(self,type="rebuild",yall=False):
+        run = {}
         for location in self.locations:
             if os.path.exists(os.getcwd()+'/data/'+location['name']+"-subnets.csv"):
                 if yall == False:
@@ -388,9 +387,11 @@ class Geolocator(Base):
     def rerun(self,type="retry",latency=0):
         print("Rerun")
 
-        runs = int(input("How many runs?: "))
-        run = self.checkFiles("update")
-        barrier = self.barrier(run)
+        barriers = 0
+        run = self.checkFiles("update",True)
+        for location in self.locations:
+            if len(run) > 0 and location['name'] in run: barriers += 1
+        barrier = Barrier(barriers)
 
         if os.path.exists(os.getcwd()+"/GeoLite2-Country.mmdb"):
             print("Loading GeoLite2-Country.mmdb")
@@ -400,7 +401,9 @@ class Geolocator(Base):
 
         self.loadPingable()
 
-        current = 0
+        current,runs = 0,1
+        if type == "retry" and float(latency) > 0: runs = float(latency)
+        print(f"Running {runs} times")
         while current < runs:
             notPingable = []
             for location in self.locations:
