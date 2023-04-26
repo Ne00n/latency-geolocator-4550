@@ -179,7 +179,7 @@ class Geolocator(Base):
             for index, ip in enumerate(data):
                 ips.append(ip)
                 mapping[ip] = row[1]
-                if index == 1: break
+                if index == 0: break
         return ips,mapping
 
     def SubnetsToRandomIP(self,list):
