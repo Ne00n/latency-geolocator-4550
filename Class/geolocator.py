@@ -328,7 +328,10 @@ class Geolocator(Base):
         writer = MMDBWriter(4, 'GeoIP2-City', languages=['EN'], description="yammdb")
         for location,data in export.items():
             locationData = self.getDataFromLocationID(location)
-            writer.insert_network(IPSet(data['subnets']), {'country':{'iso_code':locationData['country'],'continent_code':locationData['continent']},'location':{"latitude":float(locationData['latitude']),"longitude":float(locationData['longitude'])}})
+            info = {'country':{'iso_code':locationData['country']},
+                    'continent':{'code':locationData['continent']},
+                    'location':{"latitude":float(locationData['latitude']),"longitude":float(locationData['longitude'])}}
+            writer.insert_network(IPSet(data['subnets']), info)
         writer.to_db_file('geo.mmdb')
 
     def getDataFromLocationID(self,location):
