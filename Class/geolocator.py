@@ -223,8 +223,12 @@ class Geolocator(Base):
                 if ips[index*1000:(index+1)*1000]: commands.append(f"{command} {' '.join(ips[index*1000:(index+1)*1000])}")
             print(location['name'],f"Running fping with {multiplicator} threads and {len(commands)} batches")
             pool = multiprocessing.Pool(processes = multiplicator)
-            results = pool.map(self.cmd, commands)
-            latency = self.getAvrg(results) 
+            for i in range(3):
+                results = pool.map(self.cmd, commands)
+                latency = self.getAvrg(results)
+                if latency: break
+                print(location['name'],f"Retrying fping in 10s")
+                time.sleep(10) 
             subnets = self.mapToSubnet(latency,mapping)
             if update is False:
                 print(location['name'],"Updating",location['name']+"-subnets.csv")
