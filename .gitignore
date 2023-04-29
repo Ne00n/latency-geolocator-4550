@@ -5,5 +5,5 @@ config
 tmp*
 notPingable.json
 pingable.json
-locations.json
+locations.json*
 test.py
