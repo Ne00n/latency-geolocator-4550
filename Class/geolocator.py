@@ -326,16 +326,19 @@ class Geolocator(Base):
                 if latency[subnet]['latency'] == None or float(ms) < float(latency[subnet]['latency']): 
                     latency[subnet] = {"location":location['id'],"latency":ms}
         for subnet,data in latency.items():
-            if not data['location'] in export: export[data['location']] = {"subnets":[]}
-            export[data['location']]['subnets'].append(subnet)
+            ms = int(float(data['latency']))
+            if not data['location'] in export: export[data['location']] = {}
+            if not ms in export[data['location']]: export[data['location']][ms] = {"subnets":[]}
+            export[data['location']][ms]['subnets'].append(subnet)
         print("Saving geo.mmdb")
         writer = MMDBWriter(4, 'GeoIP2-City', languages=['EN'], description="yammdb")
-        for location,data in export.items():
+        for location,latency in export.items():
             locationData = self.getDataFromLocationID(location)
-            info = {'country':{'iso_code':locationData['country']},
-                    'continent':{'code':locationData['continent']},
-                    'location':{"latitude":float(locationData['latitude']),"longitude":float(locationData['longitude'])}}
-            writer.insert_network(IPSet(data['subnets']), info)
+            for ms,subnets in latency.items():
+                info = {'country':{'iso_code':locationData['country']},
+                        'continent':{'code':locationData['continent']},
+                        'location':{"accuracy_radius":float(ms),"latitude":float(locationData['latitude']),"longitude":float(locationData['longitude'])}}
+                writer.insert_network(IPSet(subnets['subnets']), info)
         writer.to_db_file('geo.mmdb')
 
     def getDataFromLocationID(self,location):
