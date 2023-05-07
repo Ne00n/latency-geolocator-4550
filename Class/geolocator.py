@@ -318,18 +318,38 @@ class Geolocator(Base):
         for subnet in subnets[firstNode]:
             for location in self.locations:
                 if not subnet in subnets[location['id']]:
-                    print(f"Warning unable to find {subnet} in {location['country']}")
+                    #print(f"Warning unable to find {subnet} in {location['country']}")
                     continue
                 if subnets[location['id']][subnet] == "retry": continue
                 if not subnet in latency: latency[subnet] = {"location":None,"latency":None}
                 ms = subnets[location['id']][subnet]
                 if latency[subnet]['latency'] == None or float(ms) < float(latency[subnet]['latency']): 
                     latency[subnet] = {"location":location['id'],"latency":ms}
+        print("Building export list")
+        gap = {}
         for subnet,data in latency.items():
             ms = int(float(data['latency']))
             if not data['location'] in export: export[data['location']] = {}
             if not ms in export[data['location']]: export[data['location']][ms] = {"subnets":[]}
             export[data['location']][ms]['subnets'].append(subnet)
+            ip, prefix = subnet.split("/")
+            if int(prefix) < 24:
+                lookup = self.asndb.lookup(ip)
+                if lookup[0] == None: continue
+                ip, prefix = lookup[1].split("/")
+                if int(prefix) > 23: continue
+                if not lookup[1] in gap: gap[lookup[1]] = {}
+                gap[lookup[1]][subnet] = {"location":data['location'],'ms':ms}
+        print("Filling the gaps")
+        for subnet,data in gap.items():
+            subs,last = self.networkToSubs(subnet),""
+            for sub in subs:
+                if sub in gap[subnet]:
+                    last = sub
+                else:
+                    if last == "": last = next(iter(data))
+                    subData = data[last]
+                    export[subData['location']][subData['ms']]['subnets'].append(sub)
         print("Saving geo.mmdb")
         writer = MMDBWriter(4, 'GeoIP2-City', languages=['EN'], description="yammdb")
         for location,latency in export.items():
