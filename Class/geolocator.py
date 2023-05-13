@@ -1,4 +1,4 @@
-import ipaddress, random, pyasn, sqlite3, time, json, math, sys, re, os
+import ipaddress, fileinput, random, pyasn, sqlite3, time, json, math, sys, re, os
 from aggregate_prefixes import aggregate_prefixes
 from multiprocessing import Process, Queue
 from netaddr import IPNetwork, IPSet
@@ -237,17 +237,13 @@ class Geolocator(Base):
                     f.write(csv)
             elif update is True:
                 print(location['name'],"Merging",location['name']+"-subnets.csv")
-                with open(os.getcwd()+'/data/'+location['name']+"-subnets.csv", 'r') as f:
-                    subnetsCurrentRaw = f.read()
-                subnetsCurrent = self.csvToDict(subnetsCurrentRaw)
-                subnetsCurrentRaw = {}
-                for line in subnets.items():
-                    subnetsCurrent[line[0]] = line[1]
-                if row + 4000 >= length:
-                    print(location['name'],"Saving",location['name']+"-subnets.csv")
-                    csv = self.dictToCsv(subnetsCurrent)
-                    with open(os.getcwd()+'/data/'+location['name']+"-subnets.csv", "w") as f:
-                        f.write(csv)
+                #read line by line, to avoid memory fuckery
+                for  line in fileinput.FileInput(os.getcwd()+'/data/'+location['name']+"-subnets.csv", inplace=1):
+                    prefix, latency = line.split(",")
+                    if prefix in subnets: 
+                        print(f"{prefix},{subnets[prefix]}")
+                    else:
+                        print(line.strip())
             row += 1000 * multiplicator
             print(location['name'],"Done",row,"of",length)
             if barrier is not False:
