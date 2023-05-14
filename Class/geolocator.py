@@ -1,4 +1,4 @@
-import ipaddress, fileinput, random, pyasn, sqlite3, time, json, math, sys, re, os
+import ipaddress, in_place, random, pyasn, sqlite3, time, json, math, sys, re, os
 from aggregate_prefixes import aggregate_prefixes
 from multiprocessing import Process, Queue
 from netaddr import IPNetwork, IPSet
@@ -230,14 +230,14 @@ class Geolocator(Base):
             elif update is True:
                 print(location['name'],"Merging",location['name']+"-subnets.csv")
                 #read line by line, to avoid memory fuckery
-                for line in fileinput.FileInput(os.getcwd()+'/data/'+location['name']+"-subnets.csv", inplace=1):
-                    if not "," in line: continue
-                    prefix, latency = line.split(",")
-                    if prefix in subnets: 
-                        print(f"{prefix},{subnets[prefix]}")
-                    else:
-                        print(line.strip())
-                fileinput.close()
+                with in_place.InPlace(os.getcwd()+'/data/'+location['name']+"-subnets.csv") as fp:
+                    for line in fp:
+                        if not "," in line: continue
+                        prefix, latency = line.split(",")
+                        if prefix in subnets: 
+                            fp.write(f"{prefix},{subnets[prefix]}\n")
+                        else:
+                            fp.write(line)
             row += 1000 * multiplicator
             print(location['name'],"Done",row,"of",length)
             if barrier is not False:
