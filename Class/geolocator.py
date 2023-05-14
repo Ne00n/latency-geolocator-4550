@@ -41,7 +41,8 @@ class Geolocator(Base):
                 self.connection.execute(f"INSERT INTO subnets VALUES ('{subnet}','{sub}', '{ips}')")
         self.connection.commit()
 
-    def getIPsFromSubnet(self,connection,subnet,start=0,end=0):
+    @staticmethod
+    def getIPsFromSubnet(connection,subnet,start=0,end=0):
         if start != 0 or end != 0:
             return list(connection.execute("SELECT * FROM subnets LIMIT ?,?",(start,end)))
         else:
@@ -171,9 +172,10 @@ class Geolocator(Base):
         print("Saving","pingable.json")
         self.saveJson(pingable,os.getcwd()+'/pingable.json')
 
-    def getIPs(self,connection,row,length=1000):
+    @staticmethod
+    def getIPs(connection,row,length=1000):
         ips,mapping = [],{}
-        pingable = self.getIPsFromSubnet(connection,"",row,length)
+        pingable = Geolocator.getIPsFromSubnet(connection,"",row,length)
         for row in pingable:
             data = row[2].split(",")
             for index, ip in enumerate(data):
@@ -186,7 +188,7 @@ class Geolocator(Base):
         mapping,ips = {},[]
         #get the full pingable.json
         subnetsList = self.dumpDatabase()
-        subnets = self.listToDict(subnetsList)
+        subnets = Geolocator.listToDict(subnetsList)
         #go through the subnets we should get a random ip for
         for subnet in list:
             #if the subnet is not in the pingable.json ignore it
@@ -199,24 +201,14 @@ class Geolocator(Base):
             mapping[randomIP] = subnet
         return ips,mapping
 
-    def mapToSubnet(self,latency,mapping):
-        subnets = {}
-        for ip, ms in latency.items():
-            if mapping:
-                lookup = mapping[ip]
-            else:
-                lookup = self.mapping[ip]
-            subnets[lookup] = ms
-        return subnets
-
-    def fpingLocation(self,location,barrier=False,update=False,multiplicator=2):
-        mapping,length,row,map = {},self.pingableLength,0,{}
+    @staticmethod
+    def fpingLocation(location,barrier=False,update=False,length=0,notPingable=[],mapping={},multiplicator=2):
+        row,map = 0,{}
         connection = sqlite3.connect("file:subnets?mode=memory&cache=shared", uri=True)
-        if update: length = len(self.notPingable)
         while row < length:
             current = int(datetime.now().timestamp())
-            if update is False:  ips,mapping = self.getIPs(connection,row,1000 * multiplicator)
-            if update is True: ips = self.SliceAndDice(self.notPingable,row,1000 * multiplicator)
+            if update is False:  ips,mapping = Geolocator.getIPs(connection,row,1000 * multiplicator)
+            if update is True: ips = Geolocator.SliceAndDice(notPingable,row,1000 * multiplicator)
             command,commands = f"ssh {location['user']}@{location['ip']} fping -c2",[]
             loops = math.ceil(len(ips) / 1000 )
             for index in range(0,loops):
@@ -224,26 +216,28 @@ class Geolocator(Base):
             print(location['name'],f"Running fping with {multiplicator} threads and {len(commands)} batches")
             pool = multiprocessing.Pool(processes = multiplicator)
             for i in range(3):
-                results = pool.map(self.cmd, commands)
-                latency = self.getAvrg(results)
+                results = pool.map(Geolocator.cmd, commands)
+                latency = Geolocator.getAvrg(results)
                 if latency: break
                 print(location['name'],f"Retrying fping in 10s")
                 time.sleep(10) 
-            subnets = self.mapToSubnet(latency,mapping)
+            subnets = Geolocator.mapToSubnet(latency,mapping)
             if update is False:
                 print(location['name'],"Updating",location['name']+"-subnets.csv")
-                csv = self.dictToCsv(subnets)
+                csv = Geolocator.dictToCsv(subnets)
                 with open(os.getcwd()+'/data/'+location['name']+"-subnets.csv", "a") as f:
                     f.write(csv)
             elif update is True:
                 print(location['name'],"Merging",location['name']+"-subnets.csv")
                 #read line by line, to avoid memory fuckery
-                for  line in fileinput.FileInput(os.getcwd()+'/data/'+location['name']+"-subnets.csv", inplace=1):
+                for line in fileinput.FileInput(os.getcwd()+'/data/'+location['name']+"-subnets.csv", inplace=1):
+                    if not "," in line: continue
                     prefix, latency = line.split(",")
                     if prefix in subnets: 
                         print(f"{prefix},{subnets[prefix]}")
                     else:
                         print(line.strip())
+                fileinput.close()
             row += 1000 * multiplicator
             print(location['name'],"Done",row,"of",length)
             if barrier is not False:
@@ -292,7 +286,7 @@ class Geolocator(Base):
         threads = []
         for location in self.locations:
             if len(run) > 0 and location['name'] in run:
-                threads.append(Thread(target=self.fpingLocation, args=([location,barrier,False])))
+                threads.append(Thread(target=Geolocator.fpingLocation, args=([location,barrier,False,self.pingableLength])))
         self.startJoin(threads)
 
     def generate(self):
@@ -437,6 +431,6 @@ class Geolocator(Base):
             threads = []
             for location in self.locations:
                 if len(run) > 0 and location['name'] in run:
-                    threads.append(Thread(target=self.fpingLocation, args=([location,barrier,True])))
+                    threads.append(Thread(target=Geolocator.fpingLocation, args=([location,barrier,True,len(self.notPingable),self.notPingable,self.mapping])))
             self.startJoin(threads)
             current += 1

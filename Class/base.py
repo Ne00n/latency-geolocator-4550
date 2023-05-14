@@ -7,7 +7,8 @@ class Base:
         p = subprocess.run(command, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
         return [p.stdout.decode('utf-8'),p.stderr.decode('utf-8')]
 
-    def SliceAndDice(self,notPingable,row,length=1000):
+    @staticmethod
+    def SliceAndDice(notPingable,row,length=1000):
         if row + 1000 > len(notPingable):
             maximale = len(notPingable)
         else:
@@ -17,23 +18,35 @@ class Base:
     def csvToDict(self,csv):
         dict = {}
         for row in csv.splitlines():
+            if not "," in row: continue
             line = row.split(",")
             dict[line[0]] = line[1]
         return dict
 
-    def dictToCsv(self,dict):
+    @staticmethod
+    def dictToCsv(dict):
         csv = ""
         for line in dict.items():
             csv += str(line[0])+","+str(line[1])+"\n"
         return csv
 
-    def listToDict(self,list,index=1,data=2):
+    @staticmethod
+    def listToDict(list,index=1,data=2):
         dict = {}
         for row in list:
             dict[row[index]] = row[data]
         return dict
 
-    def getAvrg(self,results):
+    @staticmethod
+    def mapToSubnet(latency,mapping):
+        subnets = {}
+        for ip, ms in latency.items():
+            lookup = mapping[ip]
+            subnets[lookup] = ms
+        return subnets
+
+    @staticmethod
+    def getAvrg(results):
         latency = {}
         for row in results:
             parsed = re.findall("([0-9.]+).*?:.*?([0-9+])%(.*?\/([0-9.]+))?",row[1], re.MULTILINE)
