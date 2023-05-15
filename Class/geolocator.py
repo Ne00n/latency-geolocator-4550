@@ -409,21 +409,22 @@ class Geolocator(Base):
             notPingable = []
             for location in self.locations:
                 print("Loading",location['name']+"-subnets.csv")
-                with open(os.getcwd()+'/data/'+location['name']+"-subnets.csv", 'r') as f:
-                    file = f.read()
-                tmp = self.csvToDict(file)
-                for line in tmp.items():
-                    if type == "retry" and line[1] == "retry":
-                        notPingable.append(line[0])
-                    if type == "latency" and line[1] != "retry" and float(line[1]) > float(latency):
-                        notPingable.append(line[0])
-                    if type == "geo" and line[1] != "retry" and float(line[1]) > float(latency):
-                        ip = re.sub(r'[0-9]+/[0-9]+', '1', line[0])
-                        try:
-                            response = reader.country(ip)
-                            if location['country'].upper() == response.country.iso_code: notPingable.append(line[0])
-                        except Exception as e:
-                            print("Skipping",line[0])
+                with open(os.getcwd()+'/data/'+location['name']+"-subnets.csv") as file:
+                    for line in file:
+                        line = line.rstrip()
+                        if not "," in line: continue
+                        prefix, ms = line.split(",")
+                        if type == "retry" and ms == "retry":
+                            notPingable.append(prefix)
+                        if type == "latency" and ms != "retry" and float(ms) > float(latency):
+                            notPingable.append(prefix)
+                        if type == "geo" and ms != "retry" and float(ms) > float(latency):
+                            ip = re.sub(r'[0-9]+/[0-9]+', '1', prefix)
+                            try:
+                                response = reader.country(ip)
+                                if location['country'].upper() == response.country.iso_code: notPingable.append(prefix)
+                            except Exception as e:
+                                print("Skipping",prefix)
             notPingable,tmp = list(set(notPingable)),""
             print("Fetching Random IPs")
             self.notPingable,self.mapping = self.SubnetsToRandomIP(notPingable,failedIPs)
@@ -446,7 +447,6 @@ class Geolocator(Base):
                     ips[ip] += 1
             for ip,count in ips.items():
                 if count == len(self.locations):
-                    print(f"Adding {ip} to failed")
                     failedIPs.append(ip)
             failedIPs = list(set(failedIPs))
             current += 1

@@ -15,14 +15,6 @@ class Base:
             maximale = row + length
         return notPingable[row:maximale]
 
-    def csvToDict(self,csv):
-        dict = {}
-        for row in csv.splitlines():
-            if not "," in row: continue
-            line = row.split(",")
-            dict[line[0]] = line[1]
-        return dict
-
     @staticmethod
     def dictToCsv(dict):
         csv = ""
