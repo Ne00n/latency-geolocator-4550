@@ -187,6 +187,7 @@ class Geolocator(Base):
 
     def SubnetsToRandomIP(self,list,blacklist=[]):
         mapping,ips = {},[]
+        blacklistSet = set(blacklist)
         #get the full pingable.json
         subnetsList = self.dumpDatabase()
         subnets = Geolocator.listToDict(subnetsList)
@@ -199,7 +200,7 @@ class Geolocator(Base):
             #get random ip
             for runs in range(3):
                 randomIP = random.choice(ipaaaays)
-                if randomIP in blacklist: continue
+                if randomIP in blacklistSet: continue
                 ips.append(randomIP)
                 mapping[randomIP] = subnet
                 break
