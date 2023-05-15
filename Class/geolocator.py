@@ -185,7 +185,7 @@ class Geolocator(Base):
                 if index == 0: break
         return ips,mapping
 
-    def SubnetsToRandomIP(self,list):
+    def SubnetsToRandomIP(self,list,blacklist=[]):
         mapping,ips = {},[]
         #get the full pingable.json
         subnetsList = self.dumpDatabase()
@@ -197,14 +197,17 @@ class Geolocator(Base):
             #get a list of the pingable ip's from that subnet
             ipaaaays = subnets[subnet].split(",")
             #get random ip
-            randomIP = random.choice(ipaaaays)
-            ips.append(randomIP)
-            mapping[randomIP] = subnet
+            for runs in range(3):
+                randomIP = random.choice(ipaaaays)
+                if randomIP in blacklist: continue
+                ips.append(randomIP)
+                mapping[randomIP] = subnet
+                break
         return ips,mapping
 
     @staticmethod
     def fpingLocation(location,barrier=False,update=False,length=0,notPingable=[],mapping={},multiplicator=2):
-        row,map = 0,{}
+        row,map,failedIPs = 0,{},[]
         connection = sqlite3.connect("file:subnets?mode=memory&cache=shared", uri=True)
         while row < length:
             current = int(datetime.now().timestamp())
@@ -237,6 +240,7 @@ class Geolocator(Base):
                         prefix, latency = line.split(",")
                         if prefix in subnets: 
                             fp.write(f"{prefix},{subnets[prefix]}\n")
+                            if "retry" == subnets[prefix]: failedIPs.append(subnets[prefix])
                         else:
                             fp.write(line)
             row += 1000 * multiplicator
@@ -247,6 +251,7 @@ class Geolocator(Base):
             diff = int(datetime.now().timestamp()) - current
             print(location['name'],"Finished in approximately",round(diff * ( (length - row) / (1000 * multiplicator)) / 60),"minute(s)")
         print(location['name'],"Done")
+        return failedIPs
 
     def checkFiles(self,type="rebuild",yall=False):
         run = {}
@@ -397,7 +402,7 @@ class Geolocator(Base):
 
         self.loadPingable()
 
-        current,runs = 0,1
+        current,runs,failedIPs = 0,1,[]
         if type == "retry" and float(latency) > 0: runs = float(latency)
         print(f"Running {runs} times")
         while current < runs:
@@ -421,7 +426,7 @@ class Geolocator(Base):
                             print("Skipping",line[0])
             notPingable,tmp = list(set(notPingable)),""
             print("Fetching Random IPs")
-            self.notPingable,self.mapping = self.SubnetsToRandomIP(notPingable)
+            self.notPingable,self.mapping = self.SubnetsToRandomIP(notPingable,failedIPs)
             notPingable = ""
 
             print("Found",len(self.notPingable),"subnets")
@@ -432,4 +437,16 @@ class Geolocator(Base):
             results = pool.map(fping, self.locations)
             #wait for everything
             pool.shutdown(wait=True)
+            print("Processing ips")
+            ips = {}
+            #if we crash here, likely a exception crashed the thread in the pool
+            for result in results:
+                for ip in result:
+                    if not ip in ips: ips[ip] = 0
+                    ips[ip] += 1
+            for ip,count in ips.items():
+                if count == len(self.locations):
+                    print(f"Adding {ip} to failed")
+                    failedIPs.append(ip)
+            failedIPs = list(set(failedIPs))
             current += 1
