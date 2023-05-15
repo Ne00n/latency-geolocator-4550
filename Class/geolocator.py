@@ -284,7 +284,7 @@ class Geolocator(Base):
         for location in self.locations:
             if len(run) > 0 and location['name'] in run: barriers += 1
 
-        barrier = Barrier(barriers)
+        barrier = multiprocessing.Barrier(barriers)
 
         self.loadPingable()
         print("Got",str(self.pingableLength),"subnets")
