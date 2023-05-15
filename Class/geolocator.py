@@ -1,12 +1,13 @@
 import ipaddress, in_place, random, pyasn, sqlite3, time, json, math, sys, re, os
+from concurrent.futures import ProcessPoolExecutor as Pool
 from aggregate_prefixes import aggregate_prefixes
 from multiprocessing import Process, Queue
 from netaddr import IPNetwork, IPSet
 from mmdb_writer import MMDBWriter
+from functools import partial
 from datetime import datetime
 from netaddr import IPNetwork
 from threading import Thread
-from threading import Barrier
 from Class.base import Base
 from shutil import copyfile
 import multiprocessing
@@ -384,11 +385,9 @@ class Geolocator(Base):
     def rerun(self,type="retry",latency=0):
         print("Rerun")
 
-        barriers = 0
         run = self.checkFiles("update",True)
-        for location in self.locations:
-            if len(run) > 0 and location['name'] in run: barriers += 1
-        barrier = Barrier(barriers)
+        manager = multiprocessing.Manager()
+        barrier = manager.Barrier(len(self.locations))
 
         if os.path.exists(os.getcwd()+"/GeoLite2-Country.mmdb"):
             print("Loading GeoLite2-Country.mmdb")
@@ -428,9 +427,9 @@ class Geolocator(Base):
             print("Found",len(self.notPingable),"subnets")
             if len(self.notPingable) == 0: return False
 
-            threads = []
-            for location in self.locations:
-                if len(run) > 0 and location['name'] in run:
-                    threads.append(Thread(target=Geolocator.fpingLocation, args=([location,barrier,True,len(self.notPingable),self.notPingable,self.mapping])))
-            self.startJoin(threads)
+            pool = Pool(max_workers = len(self.locations))
+            fping = partial(self.fpingLocation, barrier=barrier,update=True,length=len(self.notPingable),notPingable=self.notPingable,mapping=self.mapping)
+            results = pool.map(fping, self.locations)
+            #wait for everything
+            pool.shutdown(wait=True)
             current += 1
