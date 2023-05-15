@@ -225,7 +225,7 @@ class Geolocator(Base):
                 if latency: break
                 print(location['name'],f"Retrying fping in 10s")
                 time.sleep(10) 
-            subnets = Geolocator.mapToSubnet(latency,mapping)
+            subnets,networks = Geolocator.mapToSubnet(latency,mapping)
             if update is False:
                 print(location['name'],"Updating",location['name']+"-subnets.csv")
                 csv = Geolocator.dictToCsv(subnets)
@@ -240,7 +240,7 @@ class Geolocator(Base):
                         prefix, latency = line.split(",")
                         if prefix in subnets: 
                             fp.write(f"{prefix},{subnets[prefix]}\n")
-                            if "retry" == subnets[prefix]: failedIPs.append(subnets[prefix])
+                            if "retry" == subnets[prefix]: failedIPs.append(networks[prefix])
                         else:
                             fp.write(line)
             row += 1000 * multiplicator

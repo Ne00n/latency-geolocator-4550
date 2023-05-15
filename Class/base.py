@@ -39,11 +39,12 @@ class Base:
 
     @staticmethod
     def mapToSubnet(latency,mapping):
-        subnets = {}
+        subnets,networks = {},{}
         for ip, ms in latency.items():
             lookup = mapping[ip]
             subnets[lookup] = ms
-        return subnets
+            networks[lookup] = ip
+        return subnets,networks
 
     @staticmethod
     def getAvrg(results):
