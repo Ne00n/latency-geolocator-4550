@@ -2,3 +2,4 @@
 *.conf
 *.bak
 *.csv
+._in*
