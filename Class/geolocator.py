@@ -231,7 +231,7 @@ class Geolocator(Base):
                 if update is False:
                     print(location['name'],"Updating",location['name']+"-subnets.csv")
                     csv = Geolocator.dictToCsv(subnets)
-                    with open(os.getcwd()+'/data/'+location['name']+"-subnets.csv", "w") as f:
+                    with open(os.getcwd()+'/data/'+location['name']+"-subnets.csv", "w+") as f:
                         f.write(csv)
                 elif update is True:
                         print(location['name'],"Merging",location['name']+"-subnets.csv")
@@ -245,7 +245,7 @@ class Geolocator(Base):
                                     if "retry" == subnets[prefix]: failedIPs.append(networks[prefix])
                                 else:
                                     fp.write(line)
-                        subnets,networks = {},{}
+                subnets,networks = {},{}
             row += 1000 * multiplicator
             print(location['name'],"Done",row,"of",length)
             if barrier is not False:
