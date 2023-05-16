@@ -231,7 +231,7 @@ class Geolocator(Base):
                 if update is False:
                     print(location['name'],"Updating",location['name']+"-subnets.csv")
                     csv = Geolocator.dictToCsv(subnets)
-                    with open(os.getcwd()+'/data/'+location['name']+"-subnets.csv", "w+") as f:
+                    with open(os.getcwd()+'/data/'+location['name']+"-subnets.csv", "a+") as f:
                         f.write(csv)
                 elif update is True:
                         print(location['name'],"Merging",location['name']+"-subnets.csv")
