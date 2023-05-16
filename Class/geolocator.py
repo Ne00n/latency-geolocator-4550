@@ -227,27 +227,25 @@ class Geolocator(Base):
                 print(location['name'],f"Retrying fping in 10s")
                 time.sleep(10) 
             subnets,networks = Geolocator.mapToSubnet(latency,mapping,subnets,networks)
-            if update is False:
-                print(location['name'],"Updating",location['name']+"-subnets.csv")
-                csv = Geolocator.dictToCsv(subnets)
-                with open(os.getcwd()+'/data/'+location['name']+"-subnets.csv", "a") as f:
-                    f.write(csv)
-            elif update is True:
-                if row + (1000 * multiplicator) >= length or row % ((1000 * multiplicator) * 20) == 0:
-                    print(location['name'],"Merging",location['name']+"-subnets.csv")
-                    #read line by line, to avoid memory fuckery
-                    with in_place.InPlace(os.getcwd()+'/data/'+location['name']+"-subnets.csv") as fp:
-                        for line in fp:
-                            if not "," in line: continue
-                            prefix, latency = line.split(",")
-                            if prefix in subnets: 
-                                fp.write(f"{prefix},{subnets[prefix]}\n")
-                                if "retry" == subnets[prefix]: failedIPs.append(networks[prefix])
-                            else:
-                                fp.write(line)
-                    subnets,networks = {},{}
-                else:
-                    print(location['name'],"Skipping Merge",location['name']+"-subnets.csv")
+            if row + (1000 * multiplicator) >= length or row % ((1000 * multiplicator) * 20) == 0:
+                if update is False:
+                    print(location['name'],"Updating",location['name']+"-subnets.csv")
+                    csv = Geolocator.dictToCsv(subnets)
+                    with open(os.getcwd()+'/data/'+location['name']+"-subnets.csv", "w") as f:
+                        f.write(csv)
+                elif update is True:
+                        print(location['name'],"Merging",location['name']+"-subnets.csv")
+                        #read line by line, to avoid memory fuckery
+                        with in_place.InPlace(os.getcwd()+'/data/'+location['name']+"-subnets.csv") as fp:
+                            for line in fp:
+                                if not "," in line: continue
+                                prefix, latency = line.split(",")
+                                if prefix in subnets: 
+                                    fp.write(f"{prefix},{subnets[prefix]}\n")
+                                    if "retry" == subnets[prefix]: failedIPs.append(networks[prefix])
+                                else:
+                                    fp.write(line)
+                        subnets,networks = {},{}
             row += 1000 * multiplicator
             print(location['name'],"Done",row,"of",length)
             if barrier is not False:
