@@ -30,8 +30,7 @@ class Base:
         return dict
 
     @staticmethod
-    def mapToSubnet(latency,mapping):
-        subnets,networks = {},{}
+    def mapToSubnet(latency,mapping,subnets={},networks={}):
         for ip, ms in latency.items():
             lookup = mapping[ip]
             subnets[lookup] = ms
