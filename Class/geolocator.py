@@ -233,7 +233,7 @@ class Geolocator(Base):
                 with open(os.getcwd()+'/data/'+location['name']+"-subnets.csv", "a") as f:
                     f.write(csv)
             elif update is True:
-                if row + (1000 * multiplicator) >= length or row % ((1000 * multiplicator) * 50) == 0:
+                if row + (1000 * multiplicator) >= length or row % ((1000 * multiplicator) * 20) == 0:
                     print(location['name'],"Merging",location['name']+"-subnets.csv")
                     #read line by line, to avoid memory fuckery
                     with in_place.InPlace(os.getcwd()+'/data/'+location['name']+"-subnets.csv") as fp:
