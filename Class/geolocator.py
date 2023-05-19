@@ -226,6 +226,9 @@ class Geolocator(Base):
                 if latency: break
                 print(location['name'],f"Retrying fping in 10s")
                 time.sleep(10) 
+            if not latency:
+                for ip in ips:
+                    latency[mapping[ip]] = "retry"
             subnets,networks = Geolocator.mapToSubnet(latency,mapping,subnets,networks)
             if row + (1000 * multiplicator) >= length or row % ((1000 * multiplicator) * 20) == 0:
                 if update is False:
