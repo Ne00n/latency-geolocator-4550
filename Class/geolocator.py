@@ -259,6 +259,49 @@ class Geolocator(Base):
         print(location['name'],"Done")
         return failedIPs
 
+    @staticmethod
+    def mtrLocation(location,barrier,length,update=False,parallel=20,multiplicator=1):
+        try:
+            connection = sqlite3.connect("file:subnets?mode=memory&cache=shared", uri=True)
+            part = (length / 20)
+            ips,row,count = [],0,0
+            row = round(part * int(location['id']))
+            length = round(part * (int(location['id']) +1))
+            while row < length:
+                current = int(datetime.now().timestamp())
+                targets = Geolocator.getIPs(connection,row,100 * multiplicator)
+                command,commands = f"ssh {location['user']}@{location['ip']} mtr --report --report-cycles 1 --no-dns --gracetime 1 ",[]
+                for target in targets:
+                    targetIP = target[1] 
+                    commands.append([command,targetIP])
+                print(location['name'],f"Running mtr with {parallel} threads and {len(commands)} batches")
+                pool = multiprocessing.Pool(processes = parallel)
+                for i in range(3):
+                    results = pool.map(Geolocator.cmd, commands)
+                    mtrs = Geolocator.parseMTR(results)
+                    response = Geolocator.getLastIP(mtrs)
+                    if response: 
+                        ips.extend(response)
+                        break
+                    print(location['name'],f"Retrying mtr in 10s")
+                    time.sleep(10)
+                if row + (100 * multiplicator) >= length or count % ((100 * multiplicator) * 10) == 0:
+                    if update is False:
+                        print(location['name'],"Updating",location['name']+"-subnets.csv")
+                        csv = Geolocator.listToCsv(ips)
+                        with open(os.getcwd()+'/mtr/'+location['name']+"-subnets.csv", "a+") as f:
+                            f.write(csv)
+                        ips = []
+                row += 100 * multiplicator
+                count += 100
+                print(location['name'],"Done",row,"of",length)
+                diff = int(datetime.now().timestamp()) - current
+                print(location['name'],"Finished in approximately",round(diff * ( (length - row) / (100 * multiplicator)) / 60),"minute(s)")
+                print(location['name'],"Waiting")
+                barrier.wait()
+        except Exception as err:
+            print("Error",err)
+
     def checkFiles(self,type="rebuild",yall=False):
         run = {}
         for location in self.locations:
@@ -367,35 +410,7 @@ class Geolocator(Base):
         for row in self.locations:
             if row['id'] == location: return row
 
-    def followingSub(self,index,dc):
-        currentSub = dc[index]['subnet']
-        nextSub = dc[index+1]['subnet']
-        first, second, third, fourth = currentSub.split('.')
-        stops = [1,1,2,4]
-        for i in stops:
-            third = int(third) + i
-            possible = f"{first}.{second}.{third}.{fourth}"
-            if possible == nextSub: return True
-
-    def sameTargets(self,targets,nextTargets):
-        targetsNextRaw = nextTargets.replace("[","").replace("]","")
-        targetsNext = targetsNextRaw.split(",")
-        targetsRaw = targets.replace("[","").replace("]","")
-        targets = targetsRaw.split(",")
-        if targets[:3] == targetsNext[:3]: return True
-
-    def allFollowingSubs(self,dc,current):
-        count = 0
-        for index in range(current, len(dc) -1):
-            if dc[index] == "" or dc[index+1] == "": return count
-            if self.followingSub(index,dc): 
-                count += 1
-            else:
-                return count
-        return count
-
     def mtr(self):
-        print("MTR")
         print("Preparing")
         subnets,possibleTargets,targets = {},{},[]
         subnets = self.getLocationMap()
@@ -408,6 +423,27 @@ class Geolocator(Base):
         for subnet,count in possibleTargets.items():
             if count == len(self.locations): targets.append(subnet)
         print(f"Found {len(targets)} targets")
+
+        manager = multiprocessing.Manager()
+        barrier = manager.Barrier(len(self.locations))
+
+        print("Offloading Query list")
+        self.connection.execute("""CREATE TABLE subnets (subnet, sub, ips)""")
+        length = 0
+        for subnet in targets:
+            ip, prefix = subnet.split("/")
+            ip = ip[:-1]
+            ip = f"{ip}1"
+            self.connection.execute(f"INSERT INTO subnets VALUES ('{subnet}','{subnet}','{ip}')")
+            length += 1
+        self.connection.commit()
+        print(f"Found {length} subnets")
+
+        pool = Pool(max_workers = len(self.locations))
+        mtr = partial(self.mtrLocation, barrier=barrier,length=length)
+        pool.map(mtr, self.locations)
+        #wait for everything
+        pool.shutdown(wait=True)
 
     def rerun(self,type="retry",latency=0):
         print("Rerun")
