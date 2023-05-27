@@ -397,8 +397,17 @@ class Geolocator(Base):
     def mtr(self):
         print("MTR")
         print("Preparing")
-        subnets = {}
+        subnets,possibleTargets,targets = {},{},[]
         subnets = self.getLocationMap()
+        for location,data in subnets.items():
+            for subnet,latency in data.items():
+                if not subnet in possibleTargets: possibleTargets[subnet] = 0
+                possibleTargets[subnet] = possibleTargets[subnet] +1
+        print(f"Found {len(possibleTargets)} possible targets")
+
+        for subnet,count in possibleTargets.items():
+            if count == len(self.locations): targets.append(subnet)
+        print(f"Found {len(targets)} targets")
 
     def rerun(self,type="retry",latency=0):
         print("Rerun")
