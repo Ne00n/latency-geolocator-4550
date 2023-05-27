@@ -12,6 +12,8 @@ elif sys.argv[1] == "masscan":
     geolocator.masscan()
 elif sys.argv[1] == "fill":
     geolocator.fill()
+elif sys.argv[1] == "mtr":
+    geolocator.mtr()
 elif sys.argv[1] == "geolocate":
     geolocator.geolocate()
 elif sys.argv[1] == "generate":

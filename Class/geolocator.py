@@ -305,21 +305,13 @@ class Geolocator(Base):
         print("Generate")
         subnets,latency,export = {},{},{}
         print("Preparing Build")
-        for location in self.locations:
-            print("Loading",location['name']+"-subnets.csv")
-            with open(os.getcwd()+'/data/'+location['name']+"-subnets.csv", 'r') as f:
-                file = f.read()
-            map = {}
-            for row in file.splitlines():
-                line = row.split(",")
-                map[line[0]] = line[1]
-            subnets[location['id']] = map
+        subnets = self.getLocationMap()
         print("Building geo.mmdb")
         firstNode = self.locations[0]['id']
         for subnet in subnets[firstNode]:
             for location in self.locations:
                 if not subnet in subnets[location['id']]:
-                    #print(f"Warning unable to find {subnet} in {location['country']}")
+                    print(f"Warning unable to find {subnet} in {location['country']}")
                     continue
                 if subnets[location['id']][subnet] == "retry": continue
                 if not subnet in latency: latency[subnet] = {"location":None,"latency":None}
@@ -401,6 +393,12 @@ class Geolocator(Base):
             else:
                 return count
         return count
+
+    def mtr(self):
+        print("MTR")
+        print("Preparing")
+        subnets = {}
+        subnets = self.getLocationMap()
 
     def rerun(self,type="retry",latency=0):
         print("Rerun")
