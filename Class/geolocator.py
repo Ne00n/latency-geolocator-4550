@@ -266,10 +266,10 @@ class Geolocator(Base):
         return failedIPs
 
     @staticmethod
-    def mtrLocation(location,barrier,length,update=False,parallel=20,multiplicator=1):
+    def mtrLocation(location,barrier,length,locations,update=False,parallel=20,multiplicator=1):
         try:
             connection = sqlite3.connect("file:subnets?mode=memory&cache=shared", uri=True)
-            part = (length / 20)
+            part = (length / locations)
             ips,row,count = [],0,0
             row = round(part * (int(location['id']) -1))
             length = round(part * (int(location['id']) +1))
@@ -450,7 +450,7 @@ class Geolocator(Base):
         print(f"Found {length} subnets")
 
         pool = Pool(max_workers = len(self.mtrLocations))
-        mtr = partial(self.mtrLocation, barrier=barrier,length=length)
+        mtr = partial(self.mtrLocation, barrier=barrier,length=length,locations=len(self.mtrLocations))
         pool.map(mtr, self.mtrLocations)
         #wait for everything
         pool.shutdown(wait=True)
