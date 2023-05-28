@@ -174,6 +174,10 @@ class Geolocator(Base):
         self.saveJson(pingable,os.getcwd()+'/pingable.json')
 
     @staticmethod
+    def getIPsSimple(connection,start=0,end=0):
+        return list(connection.execute("SELECT * FROM subnets LIMIT ?,?",(start,end)))
+
+    @staticmethod
     def getIPs(connection,row,length=1000):
         ips,mapping = [],{}
         pingable = Geolocator.getIPsFromSubnet(connection,"",row,length)
@@ -269,7 +273,7 @@ class Geolocator(Base):
             length = round(part * (int(location['id']) +1))
             while row < length:
                 current = int(datetime.now().timestamp())
-                targets = Geolocator.getIPs(connection,row,100 * multiplicator)
+                targets = Geolocator.getIPsSimple(connection,row,100 * multiplicator)
                 command,commands = f"ssh {location['user']}@{location['ip']} mtr --report --report-cycles 1 --no-dns --gracetime 1 ",[]
                 for target in targets:
                     targetIP = target[1] 
@@ -428,13 +432,13 @@ class Geolocator(Base):
         barrier = manager.Barrier(len(self.locations))
 
         print("Offloading Query list")
-        self.connection.execute("""CREATE TABLE subnets (subnet, sub, ips)""")
+        self.connection.execute("""CREATE TABLE subnets (subnet, ip)""")
         length = 0
         for subnet in targets:
             ip, prefix = subnet.split("/")
             ip = ip[:-1]
             ip = f"{ip}1"
-            self.connection.execute(f"INSERT INTO subnets VALUES ('{subnet}','{subnet}','{ip}')")
+            self.connection.execute(f"INSERT INTO subnets VALUES ('{subnet}','{ip}')")
             length += 1
         self.connection.commit()
         print(f"Found {length} subnets")
