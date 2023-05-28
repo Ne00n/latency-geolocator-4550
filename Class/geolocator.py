@@ -301,8 +301,8 @@ class Geolocator(Base):
                 print(location['name'],"Done",row,"of",length)
                 diff = int(datetime.now().timestamp()) - current
                 print(location['name'],"Finished in approximately",round(diff * ( (length - row) / (100 * multiplicator)) / 60),"minute(s)")
-                print(location['name'],"Waiting")
-                barrier.wait()
+                #print(location['name'],"Waiting")
+                #barrier.wait()
         except Exception as err:
             print("Error",err)
 
