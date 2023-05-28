@@ -269,7 +269,7 @@ class Geolocator(Base):
             connection = sqlite3.connect("file:subnets?mode=memory&cache=shared", uri=True)
             part = (length / 20)
             ips,row,count = [],0,0
-            row = round(part * int(location['id']))
+            row = round(part * (int(location['id']) -1))
             length = round(part * (int(location['id']) +1))
             while row < length:
                 current = int(datetime.now().timestamp())
