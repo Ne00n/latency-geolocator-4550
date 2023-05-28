@@ -281,7 +281,7 @@ class Geolocator(Base):
                 print(location['name'],f"Running mtr with {parallel} threads and {len(commands)} batches")
                 pool = multiprocessing.Pool(processes = parallel)
                 for i in range(3):
-                    results = pool.map(Geolocator.cmd, commands)
+                    results = pool.map(Geolocator.cmdInitial, commands)
                     mtrs = Geolocator.parseMTR(results)
                     response = Geolocator.getLastIP(mtrs)
                     if response: 

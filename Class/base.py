@@ -8,6 +8,15 @@ class Base:
         return [p.stdout.decode('utf-8'),p.stderr.decode('utf-8')]
 
     @staticmethod
+    def cmdInitial(command,timeout=10):
+    try:
+        run = f"{command[0]} {command[1]}"
+        p = subprocess.run(run, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, timeout=timeout)
+        return [command[1],p.stdout.decode('utf-8'),p.stderr.decode('utf-8')]
+    except:
+        return ["",""]
+
+    @staticmethod
     def SliceAndDice(notPingable,row,length=1000):
         if row + 1000 > len(notPingable):
             maximale = len(notPingable)
