@@ -266,7 +266,7 @@ class Geolocator(Base):
         return failedIPs
 
     @staticmethod
-    def mtrLocation(location,barrier,length,locations,update=False,parallel=10,multiplicator=1):
+    def mtrLocation(location,barrier,length,locations,update=False,parallel=12,multiplicator=1):
         try:
             connection = sqlite3.connect("file:subnets?mode=memory&cache=shared", uri=True)
             part = (length / locations)

@@ -6,4 +6,5 @@ tmp*
 notPingable.json
 pingable.json
 locations.json*
+mtr.json
 test.py
