@@ -89,3 +89,20 @@ class Base:
                 map[line[0]] = line[1]
             subnets[location['id']] = map
         return subnets
+
+    @staticmethod
+    def parseMTR(results):
+        mtrs = []
+        for result in results:
+            mtrs.append([result[0],re.findall("([0-9]+)\.\|--\s([0-9.]+).+?\n",result[1], re.MULTILINE)])
+        return mtrs
+
+    @staticmethod
+    def getLastIP(mtrs):
+        lastIP,lastIPs = "",[]
+        for mtr in mtrs:
+            for line in mtr[1]:
+                lastIP = line[1]
+                if "???" in line[1]: break
+            lastIPs.append([mtr[0],lastIP])
+        return lastIPs
