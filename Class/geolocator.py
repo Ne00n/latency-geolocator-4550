@@ -26,7 +26,7 @@ class Geolocator(Base):
         print("Loading locations.json")
         self.locations = self.loadJson(os.getcwd()+'/locations.json')
         print("Loading mtr.json")
-        self.mtr = self.loadJson(os.getcwd()+'/mtr.json')
+        self.mtrLocations = self.loadJson(os.getcwd()+'/mtr.json')
 
     def loadPingable(self,offloading=True):
         print("Loading pingable.json")
@@ -433,7 +433,7 @@ class Geolocator(Base):
 
         possibleTargets = {}
         manager = multiprocessing.Manager()
-        barrier = manager.Barrier(len(self.mtr))
+        barrier = manager.Barrier(len(self.mtrLocations))
 
         print("Offloading Query list")
         self.connection.execute("""CREATE TABLE subnets (subnet, ip)""")
@@ -449,7 +449,7 @@ class Geolocator(Base):
         targets = {}
         print(f"Found {length} subnets")
 
-        pool = Pool(max_workers = len(self.mtr))
+        pool = Pool(max_workers = len(self.mtrLocations))
         mtr = partial(self.mtrLocation, barrier=barrier,length=length)
         pool.map(mtr, self.mtr)
         #wait for everything
