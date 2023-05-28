@@ -424,10 +424,12 @@ class Geolocator(Base):
                 possibleTargets[subnet] = possibleTargets[subnet] +1
         print(f"Found {len(possibleTargets)} possible targets")
 
+        subnets = {}
         for subnet,count in possibleTargets.items():
             if count == len(self.locations): targets.append(subnet)
         print(f"Found {len(targets)} targets")
 
+        possibleTargets = {}
         manager = multiprocessing.Manager()
         barrier = manager.Barrier(len(self.locations))
 
@@ -441,6 +443,8 @@ class Geolocator(Base):
             self.connection.execute(f"INSERT INTO subnets VALUES ('{subnet}','{ip}')")
             length += 1
         self.connection.commit()
+
+        targets = {}
         print(f"Found {length} subnets")
 
         pool = Pool(max_workers = len(self.locations))
