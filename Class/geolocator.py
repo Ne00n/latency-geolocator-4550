@@ -451,7 +451,7 @@ class Geolocator(Base):
 
         pool = Pool(max_workers = len(self.mtrLocations))
         mtr = partial(self.mtrLocation, barrier=barrier,length=length)
-        pool.map(mtr, self.mtr)
+        pool.map(mtr, self.mtrLocations)
         #wait for everything
         pool.shutdown(wait=True)
 
