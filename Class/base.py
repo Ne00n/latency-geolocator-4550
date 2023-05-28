@@ -106,3 +106,10 @@ class Base:
                 if "???" in line[1]: break
             lastIPs.append([mtr[0],lastIP])
         return lastIPs
+
+    @staticmethod
+    def listToCsv(dataList):
+        csv = ""
+        for line in dataList:
+            csv += str(line[0])+","+str(line[1])+"\n"
+        return csv
