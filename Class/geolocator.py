@@ -157,7 +157,7 @@ class Geolocator(Base):
         if coreCount == None:
             print("Notice: Make sure you got 1GB of memory available for each process")
             coreCount = int(input("How many processes do you want? suggestion "+str(int(len(os.sched_getaffinity(0)) / 2))+": "))
-        print(f"Using {cores} Cores")
+        print(f"Using {coreCount} Cores")
         split = int(len(filelist) / coreCount)
         diff = len(filelist) - (split * coreCount)
         while runs <= coreCount:
