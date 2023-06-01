@@ -417,7 +417,6 @@ class Geolocator(Base):
                 line = row.split(",")
                 ips.append([line[0],line[1]])
         print("Building export list")
-        export = {}
         for ip in ips:
             try:
                 response = query.city(ip[1])
