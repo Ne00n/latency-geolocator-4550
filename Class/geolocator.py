@@ -420,6 +420,7 @@ class Geolocator(Base):
         for ip in ips:
             try:
                 response = query.city(ip[1])
+                lookup = self.asndb.lookup(ip[1])
                 if lookup[0] == None: continue
                 ms = int(float(response.location.accuracy_radius))
                 geo = f"{response.location.latitude},{response.location.longitude}"
