@@ -144,7 +144,7 @@ class Geolocator(Base):
         print("Thread "+str(thread),"Done, saving file",'tmp'+str(thread)+'-pingable.json')
         self.saveJson(dataList,os.getcwd()+'/tmp'+str(thread)+'-pingable.json')
 
-    def masscan(self,cores=None):
+    def masscan(self,coreCount=None):
         print("Generating json")
         files = os.listdir(self.masscanDir)
         filelist,processes,runs = [],[],1
@@ -154,7 +154,7 @@ class Geolocator(Base):
                 continue
             if file.endswith(".json") or  file.endswith(".txt"): filelist.append(file)
         print("Found",len(filelist),"file(s)")
-        if cores == None:
+        if coreCount == None:
             print("Notice: Make sure you got 1GB of memory available for each process")
             coreCount = int(input("How many processes do you want? suggestion "+str(int(len(os.sched_getaffinity(0)) / 2))+": "))
         print(f"Using {cores} Cores")
