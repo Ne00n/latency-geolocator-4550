@@ -352,7 +352,7 @@ class Geolocator(Base):
                 threads.append(Thread(target=Geolocator.fpingLocation, args=([location,barrier,False,self.pingableLength])))
         self.startJoin(threads)
 
-    def generate(self):
+    def mtrGenerate(self):
         print("Generate")
         subnets,latency,export = {},{},{}
         print("Preparing Build")
@@ -448,6 +448,69 @@ class Geolocator(Base):
                 for subnet in data['subnets']:
                     csv += f"{subnet},{locationData['continent']},{locationData['country']},{locationData['latitude']},{locationData['longitude']},{ms}\n"
         with open("geo.csv", "w+") as f: f.write(csv)
+
+   def generate(self):
+        print("Generate")
+        subnets,latency,export = {},{},{}
+        print("Preparing Build")
+        subnets = self.getLocationMap()
+        print("Building geo.mmdb")
+        firstNode = self.locations[0]['id']
+        for subnet in subnets[firstNode]:
+            for location in self.locations:
+                if not subnet in subnets[location['id']]:
+                    print(f"Warning unable to find {subnet} in {location['country']}")
+                    continue
+                if subnets[location['id']][subnet] == "retry": continue
+                if not subnet in latency: latency[subnet] = {"location":None,"latency":None}
+                ms = subnets[location['id']][subnet]
+                if latency[subnet]['latency'] == None or float(ms) < float(latency[subnet]['latency']): 
+                    latency[subnet] = {"location":location['id'],"latency":ms}
+        print("Building export list")
+        gap = {}
+        for subnet,data in latency.items():
+            ms = int(float(data['latency']))
+            if not data['location'] in export: export[data['location']] = {}
+            if not ms in export[data['location']]: export[data['location']][ms] = {"subnets":[]}
+            export[data['location']][ms]['subnets'].append(subnet)
+            ip, prefix = subnet.split("/")
+            if int(prefix) < 24:
+                lookup = self.asndb.lookup(ip)
+                if lookup[0] == None: continue
+                ip, prefix = lookup[1].split("/")
+                if int(prefix) > 23: continue
+                if not lookup[1] in gap: gap[lookup[1]] = {}
+                gap[lookup[1]][subnet] = {"location":data['location'],'ms':ms}
+        print("Filling the gaps")
+        for subnet,data in gap.items():
+            subs,last = self.networkToSubs(subnet),""
+            for sub in subs:
+                if sub in gap[subnet]:
+                    last = sub
+                else:
+                    if last == "": last = next(iter(data))
+                    subData = data[last]
+                    export[subData['location']][subData['ms']]['subnets'].append(sub)
+        print("Saving geo.mmdb")
+        writer = MMDBWriter(4, 'GeoIP2-City', languages=['EN'], description="yammdb")
+        for location,latency in export.items():
+            locationData = self.getDataFromLocationID(location)
+            for ms,subnets in latency.items():
+                info = {'country':{'iso_code':locationData['country']},
+                        'continent':{'code':locationData['continent']},
+                        'location':{"accuracy_radius":float(ms),"latitude":float(locationData['latitude']),"longitude":float(locationData['longitude'])}}
+                writer.insert_network(IPSet(subnets['subnets']), info)
+        print("Writing geo.csv")
+        csv = "Subnet,Continent,Country,Latitude,Longitude,Latency\n"
+        for location,latency in export.items():
+            locationData = self.getDataFromLocationID(location)
+            for ms,data in latency.items():
+                for subnet in data['subnets']:
+                    csv += f"{subnet},{locationData['continent']},{locationData['country']},{locationData['latitude']},{locationData['longitude']},{ms}\n"
+        with open("geo.csv", "w+") as f: f.write(csv)
+        print("Writing geo.mmdb")
+        writer.to_db_file('geo.mmdb')
+        return export
 
     def getDataFromLocationID(self,location):
         for row in self.locations:
