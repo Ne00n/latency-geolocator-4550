@@ -394,7 +394,7 @@ class Geolocator(Base):
                     if last == "": last = next(iter(data))
                     subData = data[last]
                     export[subData['location']][subData['ms']]['subnets'].append(sub)
-        print("Saving geo.mmdb")
+        print("Saving geoLite.mmdb")
         writer = MMDBWriter(4, 'GeoIP2-City', languages=['EN'], description="yammdb")
         for location,latency in export.items():
             locationData = self.getDataFromLocationID(location)
@@ -403,8 +403,10 @@ class Geolocator(Base):
                         'continent':{'code':locationData['continent']},
                         'location':{"accuracy_radius":float(ms),"latitude":float(locationData['latitude']),"longitude":float(locationData['longitude'])}}
                 writer.insert_network(IPSet(subnets['subnets']), info)
+        print("Writing geoLite.mmdb")
+        writer.to_db_file('geoLite.mmdb')
         print("Preparing mmdb")
-        query = geoip2.database.Reader("geo.mmdb")
+        query = geoip2.database.Reader("geoLite.mmdb")
         print("Preparing Build")
         ips = []
         for location in self.locations:
