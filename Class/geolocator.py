@@ -437,6 +437,8 @@ class Geolocator(Base):
                         'continent':{'code':locationData['continent']},
                         'location':{"accuracy_radius":float(ms),"latitude":float(locationData['latitude']),"longitude":float(locationData['longitude'])}}
                 writer.insert_network(IPSet(subnets['subnets']), info)
+        print("Writing geo.mmdb")
+        writer.to_db_file('geo.mmdb')
         print("Writing geo.csv")
         csv = ""
         for location,latency in export.items():
@@ -445,8 +447,6 @@ class Geolocator(Base):
                 for subnet in data['subnets']:
                     csv += f"{subnet},{locationData['continent']},{locationData['country']},{locationData['latitude']},{locationData['longitude']},{ms}\n"
         with open("geo.csv", "w+") as f: f.write(csv)
-        print("Writing geo.mmdb")
-        writer.to_db_file('geo.mmdb')
 
     def getDataFromLocationID(self,location):
         for row in self.locations:
