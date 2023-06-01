@@ -9,7 +9,10 @@ geolocator = Geolocator(masscanDir)
 if len(sys.argv) == 1:
     print("masscan, fill, geolocate, generate, corrector, generate, debug, rerun, routing, compress")
 elif sys.argv[1] == "masscan":
-    geolocator.masscan()
+    if len(sys.argv) > 1:
+        geolocator.masscan(sys.argv[2])
+    else:
+        geolocator.masscan()
 elif sys.argv[1] == "fill":
     geolocator.fill()
 elif sys.argv[1] == "mtr":
