@@ -440,7 +440,7 @@ class Geolocator(Base):
         print("Writing geo.mmdb")
         writer.to_db_file('geo.mmdb')
         print("Writing geo.csv")
-        csv = ""
+        csv = "Subnet,Continent,Country,Latitude,Longitude,Latency\n"
         for location,latency in export.items():
             locationData = self.getDataFromLocationID(location)
             for ms,data in latency.items():
