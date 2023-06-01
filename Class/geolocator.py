@@ -401,6 +401,39 @@ class Geolocator(Base):
                         'continent':{'code':locationData['continent']},
                         'location':{"accuracy_radius":float(ms),"latitude":float(locationData['latitude']),"longitude":float(locationData['longitude'])}}
                 writer.insert_network(IPSet(subnets['subnets']), info)
+        print("Preparing mmdb")
+        query = geoip2.database.Reader("geo.mmdb")
+        print("Preparing Build")
+        ips = []
+        for location in self.locations:
+            print("Loading",location['name']+"-subnets.csv")
+            with open(os.getcwd()+'/mtr/'+location['name']+"-subnets.csv", 'r') as f:
+                file = f.read()
+            for row in file.splitlines():
+                line = row.split(",")
+                ips.append([line[0],line[1]])
+        print("Building export list")
+        export = {}
+        for ip in ips:
+            try:
+                response = query.city(ip[1])
+                if lookup[0] == None: continue
+                ms = int(float(response.location.accuracy_radius))
+                geo = f"{response.location.latitude},{response.location.longitude}"
+                if not geo in export: export[geo] = {}
+                if not ms in export[geo]: export[geo][ms] = {"continent":response.continent.code,"country":response.country.iso_code,"subnets":[]}
+                export[geo][ms]['subnets'].append(lookup[1])
+            except Exception as e:
+                continue
+        print("Saving geo.mmdb")
+        writer = MMDBWriter(4, 'GeoIP2-City', languages=['EN'], description="yammdb")
+        for location,latency in export.items():
+            locationData = self.getDataFromLocationID(location)
+            for ms,subnets in latency.items():
+                info = {'country':{'iso_code':locationData['country']},
+                        'continent':{'code':locationData['continent']},
+                        'location':{"accuracy_radius":float(ms),"latitude":float(locationData['latitude']),"longitude":float(locationData['longitude'])}}
+                writer.insert_network(IPSet(subnets['subnets']), info)
         print("Writing geo.csv")
         csv = ""
         for location,latency in export.items():
