@@ -158,9 +158,9 @@ class Geolocator(Base):
             print("Notice: Make sure you got 1GB of memory available for each process")
             coreCount = int(input("How many processes do you want? suggestion "+str(int(len(os.sched_getaffinity(0)) / 2))+": "))
         print(f"Using {coreCount} Cores")
-        split = int(len(filelist) / coreCount)
-        diff = len(filelist) - (split * coreCount)
-        while runs <= coreCount:
+        split = int(len(filelist) / int(coreCount))
+        diff = len(filelist) - (split * int(coreCount))
+        while runs <= int(coreCount):
             list = filelist[ (runs -1) *split:( (runs -1) *split)+split]
             if runs == 1 and diff != 0: list.append(filelist[len(filelist)-diff:len(filelist)][0])
             processes.append(Process(target=self.masscanFiles, args=([list,runs])))
@@ -168,7 +168,7 @@ class Geolocator(Base):
         self.startJoin(processes)
         print("Merging files")
         runs,pingable = 1,{}
-        while runs <= coreCount:
+        while runs <= int(coreCount):
             print("Loading","tmp"+str(runs)+"-pingable.json")
             file = self.loadJson(os.getcwd()+'/tmp'+str(runs)+'-pingable.json')
             pingable = {**pingable, **file}
