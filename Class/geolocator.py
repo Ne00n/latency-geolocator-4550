@@ -449,7 +449,7 @@ class Geolocator(Base):
                     csv += f"{subnet},{locationData['continent']},{locationData['country']},{locationData['latitude']},{locationData['longitude']},{ms}\n"
         with open("geo.csv", "w+") as f: f.write(csv)
 
-   def generate(self):
+    def generate(self):
         print("Generate")
         subnets,latency,export = {},{},{}
         print("Preparing Build")
