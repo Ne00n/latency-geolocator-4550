@@ -341,6 +341,14 @@ class Geolocator(Base):
 
         self.loadPingable()
         print("Got",str(self.pingableLength),"subnets")
+        print("Preflight")
+        for location in self.locations:
+            print(f"Checking {location['name']}")
+            command = f"ssh {location['user']}@{location['ip']}"
+            result = Geolocator.cmdInitial([command,"fping -c1 1.1.1.1"])
+            if not result[0]:
+                print(location)
+                exit(result)
 
         threads = []
         for location in self.locations:
