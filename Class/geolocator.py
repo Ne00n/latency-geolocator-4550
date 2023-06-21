@@ -456,10 +456,9 @@ class Geolocator(Base):
     def getCords(self,cords):
         closestCords = ""
         for index, (locationID,latency) in enumerate(cords.items()):
-            if index == 0: continue
             closestData = self.getDataFromLocationID(locationID)
             closestCords += f"{closestData['latitude']} {closestData['longitude']}"
-            if index == 3: break
+            if index == 2: break
             if index != len(cords) -1: closestCords += ","
         return closestCords
 
