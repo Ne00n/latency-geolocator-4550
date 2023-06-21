@@ -2,6 +2,7 @@ rib.*
 asn.dat
 config
 *.mmdb
+*.csv
 tmp*
 notPingable.json
 pingable.json
