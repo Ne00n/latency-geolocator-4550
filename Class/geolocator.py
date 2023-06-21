@@ -508,6 +508,7 @@ class Geolocator(Base):
                 for index, (locationID,latency) in enumerate(subnets['closest'].items()):
                     closestData = self.getDataFromLocationID(locationID)
                     closestCords += f"{closestData['latitude']} {closestData['longitude']}"
+                    if index == 2: break
                     if index != len(subnets['closest']) -1: closestCords += ",1"
                 info = {'country':{'iso_code':locationData['country']},
                         'continent':{'code':locationData['continent']},
