@@ -459,7 +459,7 @@ class Geolocator(Base):
             closestData = self.getDataFromLocationID(locationID)
             closestCords += f"{closestData['latitude']} {closestData['longitude']}"
             if index == 2: break
-            if index != len(cords) -1: closestCords += ",1"
+            if index != len(cords) -1: closestCords += ","
         return closestCords
 
     def generate(self):
