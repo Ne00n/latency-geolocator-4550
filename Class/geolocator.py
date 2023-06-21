@@ -461,22 +461,25 @@ class Geolocator(Base):
         print("Building geo.mmdb")
         firstNode = self.locations[0]['id']
         for subnet in subnets[firstNode]:
+            closest = {}
             for location in self.locations:
                 if not subnet in subnets[location['id']]:
                     print(f"Warning unable to find {subnet} in {location['country']}")
                     continue
                 if subnets[location['id']][subnet] == "retry": continue
-                if not subnet in latency: latency[subnet] = {"location":None,"latency":None}
+                if not subnet in latency: latency[subnet] = {}
                 ms = subnets[location['id']][subnet]
-                if latency[subnet]['latency'] == None or float(ms) < float(latency[subnet]['latency']): 
-                    latency[subnet] = {"location":location['id'],"latency":ms}
+                closest[location['id']] = float(ms)
+                latency[subnet] = closest
+            if subnet in latency: latency[subnet] = dict(sorted(latency[subnet].items(), key=lambda item: item[1]))
         print("Building export list")
-        gap = {}
+        gap,subnets = {},{}
         for subnet,data in latency.items():
-            ms = int(float(data['latency']))
-            if not data['location'] in export: export[data['location']] = {}
-            if not ms in export[data['location']]: export[data['location']][ms] = {"subnets":[]}
-            export[data['location']][ms]['subnets'].append(subnet)
+            location = list(data)[0]
+            latency = data[location]
+            if not location in export: export[location] = {}
+            if not latency in export[location]: export[location][latency] = {"subnets":[],"closest":data}
+            export[location][latency]['subnets'].append(subnet)
             ip, prefix = subnet.split("/")
             if int(prefix) < 24:
                 lookup = self.asndb.lookup(ip)
@@ -484,7 +487,8 @@ class Geolocator(Base):
                 ip, prefix = lookup[1].split("/")
                 if int(prefix) > 23: continue
                 if not lookup[1] in gap: gap[lookup[1]] = {}
-                gap[lookup[1]][subnet] = {"location":data['location'],'ms':ms}
+                gap[lookup[1]][subnet] = {"location":location,'ms':latency}
+        latency = {}
         print("Filling the gaps")
         for subnet,data in gap.items():
             subs,last = self.networkToSubs(subnet),""
@@ -500,10 +504,18 @@ class Geolocator(Base):
         for location,latency in export.items():
             locationData = self.getDataFromLocationID(location)
             for ms,subnets in latency.items():
+                closestCords = ""
+                for index, (locationID,latency) in enumerate(subnets['closest'].items()):
+                    closestData = self.getDataFromLocationID(locationID)
+                    closestCords += f"{closestData['latitude']} {closestData['longitude']}"
+                    if index != len(subnets['closest']) -1: closestCords += ",1"
                 info = {'country':{'iso_code':locationData['country']},
                         'continent':{'code':locationData['continent']},
-                        'location':{"accuracy_radius":float(ms),"latitude":float(locationData['latitude']),"longitude":float(locationData['longitude'])}}
+                        'location':{"accuracy_radius":float(ms),"latitude":float(locationData['latitude']),"longitude":float(locationData['longitude'])},
+                        'city':{"geoname_id":closestCords}}
                 writer.insert_network(IPSet(subnets['subnets']), info)
+        print("Writing geo.mmdb")
+        writer.to_db_file('geo.mmdb')
         print("Writing geo.csv")
         csv = "Subnet,Continent,Country,Latitude,Longitude,Latency\n"
         for location,latency in export.items():
@@ -512,8 +524,6 @@ class Geolocator(Base):
                 for subnet in data['subnets']:
                     csv += f"{subnet},{locationData['continent']},{locationData['country']},{locationData['latitude']},{locationData['longitude']},{ms}\n"
         with open("geo.csv", "w+") as f: f.write(csv)
-        print("Writing geo.mmdb")
-        writer.to_db_file('geo.mmdb')
         return export
 
     def getDataFromLocationID(self,location):
