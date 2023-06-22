@@ -520,7 +520,8 @@ class Geolocator(Base):
                 for ms,subnets in latency.items():
                     info = {'country':{'iso_code':locationData['country']},
                             'continent':{'code':locationData['continent']},
-                            'location':{"accuracy_radius":float(ms),"latitude":float(locationData['latitude']),"longitude":float(locationData['longitude'])}}
+                            'location':{"accuracy_radius":float(ms),"latitude":float(locationData['latitude']),"longitude":float(locationData['longitude'])},
+                            'city':{"geoname_id":cord}}
                     writer.insert_network(IPSet(subnets), info)
         print("Writing geo.mmdb")
         writer.to_db_file('geo.mmdb')
