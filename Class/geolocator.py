@@ -464,25 +464,19 @@ class Geolocator(Base):
 
     def generate(self):
         print("Generate")
-        subnets,latency,export = {},{},{}
-        print("Preparing Build")
-        subnets = self.getLocationMap()
+        latency,export = {},{}
         print("Building geo.mmdb")
-        firstNode = self.locations[0]['id']
-        for subnet in subnets[firstNode]:
-            closest = {}
-            for location in self.locations:
-                if not subnet in subnets[location['id']]:
-                    print(f"Warning unable to find {subnet} in {location['country']}")
-                    continue
-                if subnets[location['id']][subnet] == "retry": continue
-                if not subnet in latency: latency[subnet] = {}
-                ms = subnets[location['id']][subnet]
-                closest[location['id']] = float(ms)
-                latency[subnet] = closest
-            if subnet in latency: latency[subnet] = dict(sorted(latency[subnet].items(), key=lambda item: item[1]))
+        for location in self.locations:
+            current = self.getLocationPart(location['name'])
+            for subnet,ms in current.items():
+                if current[subnet] == "retry": continue
+                if not subnet in latency: 
+                    latency[subnet] = {location['id']:float(ms)}
+                else:
+                    latency[subnet][location['id']] = float(ms)
+                latency[subnet] = dict(sorted(latency[subnet].items(), key=lambda item: item[1]))
         print("Building export list")
-        gap,subnets = {},{}
+        gap = {}
         for subnet,data in latency.items():
             location = list(data)[0]
             latency = data[location]
