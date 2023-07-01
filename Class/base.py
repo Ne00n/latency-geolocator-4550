@@ -89,15 +89,20 @@ class Base:
     def getLocationMap(self):
         subnets = {}
         for location in self.locations:
-            print("Loading",location['name']+"-subnets.csv")
-            with open(os.getcwd()+'/data/'+location['name']+"-subnets.csv", 'r') as f:
+            map = self.getLocationPart(location['name'])
+            subnets[location['id']] = map
+        return subnets
+
+    def getLocationPart(self,fileName):
+        subnets = {}
+            print("Loading",fileName+"-subnets.csv")
+            with open(os.getcwd()+'/data/'+fileName+"-subnets.csv", 'r') as f:
                 file = f.read()
             map = {}
             for row in file.splitlines():
                 line = row.split(",")
                 map[line[0]] = line[1]
-            subnets[location['id']] = map
-        return subnets
+        return map
 
     @staticmethod
     def parseMTR(results):
