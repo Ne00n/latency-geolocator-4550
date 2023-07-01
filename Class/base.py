@@ -95,13 +95,13 @@ class Base:
 
     def getLocationPart(self,fileName):
         subnets = {}
-            print("Loading",fileName+"-subnets.csv")
-            with open(os.getcwd()+'/data/'+fileName+"-subnets.csv", 'r') as f:
-                file = f.read()
-            map = {}
-            for row in file.splitlines():
-                line = row.split(",")
-                map[line[0]] = line[1]
+        print("Loading",fileName+"-subnets.csv")
+        with open(os.getcwd()+'/data/'+fileName+"-subnets.csv", 'r') as f:
+            file = f.read()
+        map = {}
+        for row in file.splitlines():
+            line = row.split(",")
+            map[line[0]] = line[1]
         return map
 
     @staticmethod
