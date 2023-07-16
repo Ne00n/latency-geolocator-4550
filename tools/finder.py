@@ -1,7 +1,7 @@
 import subprocess, json, sys, re
 
 def mtr(target):
-    mtr = ['mtr','--aslookup','--report','--report-cycles','5','--report-wide', target]
+    mtr = ['mtr','--aslookup','--report','--report-cycles','5','--report-wide','--aslookup','--show-ips', target]
     return subprocess.run(mtr, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False).stdout.decode('utf-8')
 
 def classify(mtr):
