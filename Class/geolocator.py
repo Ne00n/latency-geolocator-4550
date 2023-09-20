@@ -117,9 +117,8 @@ class Geolocator(Base):
                     if lookup[0] == None: continue
                     if lookup[1] != currentSub:
                         if not lookup[1] in subsCache: subsCache[lookup[1]] = self.networkToSubs(lookup[1])
-                        currentSub = lookup[1]
-                        dataList[lookup[1]] = {}
-                        lastSub = 0
+                        if not lookup[1] in dataList: dataList[lookup[1]] = {}
+                        currentSub,lastSub = lookup[1],0
                         for sub in subsCache[lookup[1]]: dataList[lookup[1]][sub] = []
                     if len(subsCache[lookup[1]]) == 1:
                         if len(dataList[lookup[1]][lookup[1]]) > 20: continue
