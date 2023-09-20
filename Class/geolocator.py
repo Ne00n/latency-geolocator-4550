@@ -132,11 +132,6 @@ class Geolocator(Base):
                                 dataList[lookup[1]][sub].append(ip)
                                 lastSub = iSub
                                 break
-            #filter
-            print(f"Thread {thread} Filtering list")
-            for prefix in dataList:
-                for sub in list(dataList[prefix]):
-                    if not dataList[prefix][sub]: del dataList[prefix][sub]
             diff += int(datetime.now().timestamp()) - current
             devidor = 1 if index == 0 else index
             print(f"Thread {thread} Finished in approximately {round((diff / devidor) * (len(files) - index) / 60)} minute(s)")
