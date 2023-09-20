@@ -465,16 +465,16 @@ class Geolocator(Base):
     def generate(self):
         print("Generate")
         latency,export = {},{}
-        print("Building geo.mmdb")
+        print("Building latency dict")
         for location in self.locations:
             current = self.getLocationPart(location['name'])
             for subnet,ms in current.items():
                 if current[subnet] == "retry": continue
-                if not subnet in latency: 
-                    latency[subnet] = {location['id']:float(ms)}
-                else:
-                    latency[subnet][location['id']] = float(ms)
+                if not subnet in latency: latency[subnet] = {}
+                latency[subnet][location['id']] = float(ms)
                 latency[subnet] = dict(sorted(latency[subnet].items(), key=lambda item: item[1]))
+                #we only need the lowest anyway
+                latency[subnet] = {list(latency[subnet].keys())[0]:list(latency[subnet].values())[0]}
         print("Building export list")
         gap = {}
         for subnet,data in latency.items():
