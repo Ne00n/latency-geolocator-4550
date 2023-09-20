@@ -94,14 +94,17 @@ class Base:
         return subnets
 
     def getLocationPart(self,fileName):
-        subnets = {}
-        print("Loading",fileName+"-subnets.csv")
-        with open(os.getcwd()+'/data/'+fileName+"-subnets.csv", 'r') as f:
-            file = f.read()
-        map = {}
-        for row in file.splitlines():
-            line = row.split(",")
-            map[line[0]] = line[1]
+        subnets,map = {},{}
+        path = os.getcwd()+f'/data/{fileName}-subnets.csv'
+        if not os.path.isfile(path):
+            print("Unable to load",path)
+        else:
+            print("Loading",path)
+            with open(path, 'r') as f:
+                file = f.read()
+            for row in file.splitlines():
+                line = row.split(",")
+                map[line[0]] = line[1]
         return map
 
     @staticmethod
