@@ -10,3 +10,4 @@ locations.json*
 mtr.json
 test.py
 *.sh
+screenlog.*
