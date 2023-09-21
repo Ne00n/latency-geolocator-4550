@@ -177,15 +177,16 @@ class Geolocator(Base):
 
     @staticmethod
     def getIPs(connection,row,length=1000):
-        ips,mapping = [],{}
+        targets,mapping,noData = [],{},[]
         pingable = Geolocator.getIPsFromSubnet(connection,"",row,length)
         for row in pingable:
-            data = row[2].split(",")
-            for index, ip in enumerate(data):
-                ips.append(ip)
+            ips = row[2].split(",")
+            if "" in ips: noData.append(row[1])
+            for index, ip in enumerate(ips):
+                targets.append(ip)
                 mapping[ip] = row[1]
                 if index == 0: break
-        return ips,mapping
+        return targets,mapping,noData
 
     def SubnetsToRandomIP(self,list,blacklist=[]):
         mapping,ips = {},[]
@@ -214,7 +215,7 @@ class Geolocator(Base):
         connection = sqlite3.connect("file:subnets?mode=memory&cache=shared", uri=True)
         while row < length:
             current = int(datetime.now().timestamp())
-            if update is False:  ips,mapping = Geolocator.getIPs(connection,row,1000 * multiplicator)
+            if update is False:  ips,mapping,noData = Geolocator.getIPs(connection,row,1000 * multiplicator)
             if update is True: ips = Geolocator.SliceAndDice(notPingable,row,1000 * multiplicator)
             command,commands = f"ssh {location['user']}@{location['ip']} fping -c2",[]
             loops = math.ceil(len(ips) / 1000 )
@@ -231,6 +232,7 @@ class Geolocator(Base):
             if row + (1000 * multiplicator) >= length or row % ((1000 * multiplicator) * 20) == 0:
                 if update is False:
                     print(location['name'],"Updating",location['name']+"-subnets.csv")
+                    for subnet in noData: subnets[subnet] = "retry"
                     csv = Geolocator.dictToCsv(subnets)
                     with open(os.getcwd()+'/data/'+location['name']+"-subnets.csv", "a+") as f:
                         f.write(csv)
