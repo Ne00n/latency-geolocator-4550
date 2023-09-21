@@ -177,15 +177,11 @@ class Geolocator(Base):
 
     @staticmethod
     def getIPs(connection,row,length=1000):
-        targets,mapping,noData,lastSubnet = [],{},{"start":[]},"start"
+        targets,mapping,noData = [],{},[]
         pingable = Geolocator.getIPsFromSubnet(connection,"",row,length)
         for row in pingable:
             ips = row[2].split(",")
-            if "" in ips: 
-                if not lastSubnet in noData: noData[lastSubnet] = []
-                noData[lastSubnet].append(row[1])
-            else:
-                lastSubnet = row[1]
+            if "" in ips: noData.append(row[1])
             for index, ip in enumerate(ips):
                 targets.append(ip)
                 mapping[ip] = row[1]
@@ -218,7 +214,6 @@ class Geolocator(Base):
         row,map,failedIPs,subnets,networks = 0,{},[],{},{}
         connection = sqlite3.connect("file:subnets?mode=memory&cache=shared", uri=True)
         while row < length:
-            noData = {"start":[]}
             current = int(datetime.now().timestamp())
             if update is False:  ips,mapping,noData = Geolocator.getIPs(connection,row,1000 * multiplicator)
             if update is True: ips = Geolocator.SliceAndDice(notPingable,row,1000 * multiplicator)
@@ -233,10 +228,11 @@ class Geolocator(Base):
             if not latency:
                 for ip in ips:
                     latency[mapping[ip]] = "retry"
-            subnets,networks = Geolocator.mapToSubnet(latency,mapping,subnets,networks,noData)
+            subnets,networks = Geolocator.mapToSubnet(latency,mapping,subnets,networks)
             if row + (1000 * multiplicator) >= length or row % ((1000 * multiplicator) * 20) == 0:
                 if update is False:
                     print(location['name'],"Updating",location['name']+"-subnets.csv")
+                    for subnet in noData: subnets[subnet] = "retry"
                     csv = Geolocator.dictToCsv(subnets)
                     with open(os.getcwd()+'/data/'+location['name']+"-subnets.csv", "a+") as f:
                         f.write(csv)

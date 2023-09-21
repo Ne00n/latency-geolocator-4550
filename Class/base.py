@@ -39,14 +39,11 @@ class Base:
         return dict
 
     @staticmethod
-    def mapToSubnet(latency,mapping,subnets,networks,noData):
-        for subnet in noData["start"]: subnets[subnet] = "retry"
+    def mapToSubnet(latency,mapping,subnets={},networks={}):
         for ip, ms in latency.items():
-            subnet = mapping[ip]
-            subnets[subnet] = ms
-            networks[subnet] = ip
-            if subnet in noData:
-                for sub in noData[subnet]: subnets[sub] = "retry"
+            lookup = mapping[ip]
+            subnets[lookup] = ms
+            networks[lookup] = ip
         return subnets,networks
 
     @staticmethod
