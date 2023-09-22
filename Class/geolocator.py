@@ -216,37 +216,38 @@ class Geolocator(Base):
             current = int(datetime.now().timestamp())
             if update is False:  ips,mapping = Geolocator.getIPs(connection,row,1000 * multiplicator)
             if update is True: ips = Geolocator.SliceAndDice(notPingable,row,1000 * multiplicator)
-            command,commands = f"ssh {location['user']}@{location['ip']} fping -c2",[]
-            loops = math.ceil(len(ips) / 1000 )
-            for index in range(0,loops):
-                if ips[index*1000:(index+1)*1000]: commands.append(f"{command} {' '.join(ips[index*1000:(index+1)*1000])}")
-            print(location['name'],f"Running fping with {multiplicator} threads and {len(commands)} batches")
-            pool = multiprocessing.Pool(processes = multiplicator)
-            results = pool.map(Geolocator.cmd, commands)
-            latency = Geolocator.getAvrg(results)
-            if not latency:
-                for ip in ips:
-                    latency[mapping[ip]] = "retry"
-            subnets,networks = Geolocator.mapToSubnet(latency,mapping,subnets,networks)
-            if row + (1000 * multiplicator) >= length or row % ((1000 * multiplicator) * 20) == 0:
-                if update is False:
-                    print(location['name'],"Updating",location['name']+"-subnets.csv")
-                    csv = Geolocator.dictToCsv(subnets)
-                    with open(os.getcwd()+'/data/'+location['name']+"-subnets.csv", "a+") as f:
-                        f.write(csv)
-                elif update is True:
-                        print(location['name'],"Merging",location['name']+"-subnets.csv")
-                        #read line by line, to avoid memory fuckery
-                        with in_place.InPlace(os.getcwd()+'/data/'+location['name']+"-subnets.csv") as fp:
-                            for line in fp:
-                                if not "," in line: continue
-                                prefix, latency = line.split(",")
-                                if prefix in subnets: 
-                                    fp.write(f"{prefix},{subnets[prefix]}\n")
-                                    if "retry" == subnets[prefix]: failedIPs.append(networks[prefix])
-                                else:
-                                    fp.write(line)
-                subnets,networks = {},{}
+            if ips:
+                command,commands = f"ssh {location['user']}@{location['ip']} fping -c2",[]
+                loops = math.ceil(len(ips) / 1000 )
+                for index in range(0,loops):
+                    if ips[index*1000:(index+1)*1000]: commands.append(f"{command} {' '.join(ips[index*1000:(index+1)*1000])}")
+                print(location['name'],f"Running fping with {multiplicator} threads and {len(commands)} batches")
+                pool = multiprocessing.Pool(processes = multiplicator)
+                results = pool.map(Geolocator.cmd, commands)
+                latency = Geolocator.getAvrg(results)
+                if not latency:
+                    for ip in ips:
+                        latency[mapping[ip]] = "retry"
+                subnets,networks = Geolocator.mapToSubnet(latency,mapping,subnets,networks)
+                if row + (1000 * multiplicator) >= length or row % ((1000 * multiplicator) * 20) == 0:
+                    if update is False:
+                        print(location['name'],"Updating",location['name']+"-subnets.csv")
+                        csv = Geolocator.dictToCsv(subnets)
+                        with open(os.getcwd()+'/data/'+location['name']+"-subnets.csv", "a+") as f:
+                            f.write(csv)
+                    elif update is True:
+                            print(location['name'],"Merging",location['name']+"-subnets.csv")
+                            #read line by line, to avoid memory fuckery
+                            with in_place.InPlace(os.getcwd()+'/data/'+location['name']+"-subnets.csv") as fp:
+                                for line in fp:
+                                    if not "," in line: continue
+                                    prefix, latency = line.split(",")
+                                    if prefix in subnets: 
+                                        fp.write(f"{prefix},{subnets[prefix]}\n")
+                                        if "retry" == subnets[prefix]: failedIPs.append(networks[prefix])
+                                    else:
+                                        fp.write(line)
+                    subnets,networks = {},{}
             row += 1000 * multiplicator
             print(location['name'],"Done",row,"of",length)
             if barrier is not False:
