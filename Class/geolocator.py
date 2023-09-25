@@ -41,7 +41,7 @@ class Geolocator(Base):
             self.pingableLength += len(pingable[subnet])
             for sub,ips in pingable[subnet].items():
                 ips = ','.join(ips)
-                self.connection.execute(f"INSERT INTO subnets VALUES ('{subnet}','{sub}', '{ips}')")
+                if ips: self.connection.execute(f"INSERT INTO subnets VALUES ('{subnet}','{sub}', '{ips}')")
         self.connection.commit()
 
     @staticmethod
