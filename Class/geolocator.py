@@ -210,7 +210,7 @@ class Geolocator(Base):
         return ips,mapping
 
     @staticmethod
-    def fpingLocation(location,barrier=False,update=False,length=0,notPingable=[],mapping={},multiplicator=2):
+    def fpingLocation(location,barrier=False,update=False,length=0,notPingable=[],mapping={},multiplicator=1):
         row,map,failedIPs,subnets,networks = 0,{},[],{},{}
         connection = sqlite3.connect("file:subnets?mode=memory&cache=shared", uri=True)
         while row < length:
@@ -218,7 +218,7 @@ class Geolocator(Base):
             if update is False:  ips,mapping = Geolocator.getIPs(connection,row,1000 * multiplicator)
             if update is True: ips = Geolocator.SliceAndDice(notPingable,row,1000 * multiplicator)
             if ips:
-                command,commands = f"ssh {location['user']}@{location['ip']} fping -c2",[]
+                command,commands = f"ssh {location['user']}@{location['ip']} python3 fping.py",[]
                 loops = math.ceil(len(ips) / 1000 )
                 for index in range(0,loops):
                     if ips[index*1000:(index+1)*1000]: commands.append(f"{command} {' '.join(ips[index*1000:(index+1)*1000])}")
@@ -339,12 +339,14 @@ class Geolocator(Base):
         print("Got",str(self.pingableLength),"subnets")
         print("Preflight")
         for location in self.locations:
-            print(f"Checking {location['name']}")
+            print(f"Checking {location['name']} {location['ip']}")
             command = f"ssh {location['user']}@{location['ip']}"
             result = Geolocator.cmdInitial([command,"fping -c1 1.1.1.1"])
             if not result[0]:
                 print(location)
                 exit(result)
+            self.cmd(f"scp fping.py {location['user']}@{location['ip']}:/home/{location['user']}/")
+            result = Geolocator.cmdInitial([command,"ls"])
 
         threads = []
         for location in self.locations:
