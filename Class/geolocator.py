@@ -210,7 +210,7 @@ class Geolocator(Base):
         return ips,mapping
 
     @staticmethod
-    def fpingLocation(location,barrier=False,update=False,length=0,notPingable=[],mapping={},multiplicator=1,batchSize=1400):
+    def fpingLocation(location,barrier=False,update=False,length=0,notPingable=[],mapping={},multiplicator=1,batchSize=1000):
         row,map,failedIPs,subnets,networks = 0,{},[],{},{}
         connection = sqlite3.connect("file:subnets?mode=memory&cache=shared", uri=True)
         while row < length:
