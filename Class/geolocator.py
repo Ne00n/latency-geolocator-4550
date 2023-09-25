@@ -210,18 +210,18 @@ class Geolocator(Base):
         return ips,mapping
 
     @staticmethod
-    def fpingLocation(location,barrier=False,update=False,length=0,notPingable=[],mapping={},multiplicator=1):
+    def fpingLocation(location,barrier=False,update=False,length=0,notPingable=[],mapping={},multiplicator=1,batchSize=1400):
         row,map,failedIPs,subnets,networks = 0,{},[],{},{}
         connection = sqlite3.connect("file:subnets?mode=memory&cache=shared", uri=True)
         while row < length:
             current = int(datetime.now().timestamp())
-            if update is False:  ips,mapping = Geolocator.getIPs(connection,row,1000 * multiplicator)
-            if update is True: ips = Geolocator.SliceAndDice(notPingable,row,1000 * multiplicator)
+            if update is False:  ips,mapping = Geolocator.getIPs(connection,row,batchSize * multiplicator)
+            if update is True: ips = Geolocator.SliceAndDice(notPingable,row,batchSize * multiplicator)
             if ips:
                 command,commands = f"ssh {location['user']}@{location['ip']} python3 fping.py",[]
-                loops = math.ceil(len(ips) / 1000 )
+                loops = math.ceil(len(ips) / batchSize )
                 for index in range(0,loops):
-                    if ips[index*1000:(index+1)*1000]: commands.append(f"{command} {' '.join(ips[index*1000:(index+1)*1000])}")
+                    if ips[index*batchSize:(index+1)*batchSize]: commands.append(f"{command} {' '.join(ips[index*batchSize:(index+1)*batchSize])}")
                 print(location['name'],f"Running fping with {multiplicator} threads and {len(commands)} batches")
                 pool = multiprocessing.Pool(processes = multiplicator)
                 results = pool.map(Geolocator.cmd, commands)
@@ -230,7 +230,7 @@ class Geolocator(Base):
                     for ip in ips:
                         latency[mapping[ip]] = "retry"
                 subnets,networks = Geolocator.mapToSubnet(latency,mapping,subnets,networks)
-                if row + (1000 * multiplicator) >= length or row % ((1000 * multiplicator) * 20) == 0:
+                if row + (batchSize * multiplicator) >= length or row % ((batchSize * multiplicator) * 20) == 0:
                     if update is False:
                         print(location['name'],"Updating",location['name']+"-subnets.csv")
                         csv = Geolocator.dictToCsv(subnets)
@@ -249,7 +249,7 @@ class Geolocator(Base):
                                     else:
                                         fp.write(line)
                     subnets,networks = {},{}
-            row += 1000 * multiplicator
+            row += batchSize * multiplicator
             print(location['name'],"Done",row,"of",length)
             if barrier is not False:
                 print(location['name'],"Waiting")
