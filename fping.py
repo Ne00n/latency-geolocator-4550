@@ -14,7 +14,7 @@ def ping(command):
     p = subprocess.run(command, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     return [p.stdout.decode('utf-8'),p.stderr.decode('utf-8')]
 
-pool = multiprocessing.Pool(processes = 4)
+pool = multiprocessing.Pool(processes = 5)
 
 start_time = time.time()
 results = pool.map(ping, commands)
