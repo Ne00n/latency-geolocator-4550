@@ -123,17 +123,22 @@ class Geolocator(Base):
                         for sub in subsCache[lookup[1]]: dataList[lookup[1]][sub] = []
                     if len(subsCache[lookup[1]]) == 1:
                         if len(dataList[lookup[1]][lookup[1]]) > 20: continue
+                        #only append last octet
                         dataList[lookup[1]][lookup[1]].append(ip.split(".")[-1])
                         continue
                     else:
-                        for sub in subsCache[lookup[1]]:
+                        for sub in list(subsCache[lookup[1]]):
                             if sub in ignoreSub: continue
                             if ipaddress.IPv4Address(ip) in ipaddress.IPv4Network(sub):
                                 if len(dataList[lookup[1]][sub]) > 20: 
                                     ignoreSub.append(sub)
                                     break
+                                #only append last octet 
                                 dataList[lookup[1]][sub].append(ip.split(".")[-1])
                                 break
+                            else:
+                                #since its a ordered list of ips, we can just drop any subnets that we have no data on
+                                ignoreSub.append(sub)
             diff += int(datetime.now().timestamp()) - current
             devidor = 1 if index == 0 else index
             print(f"Thread {thread} Finished in approximately {round((diff / devidor) * (len(files) - index) / 60)} minute(s)")
