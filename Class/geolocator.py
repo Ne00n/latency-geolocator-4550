@@ -109,34 +109,21 @@ class Geolocator(Base):
                 with open(self.masscanDir+file, 'r') as f:
                     dumpTxT = f.read()
                 print(f"Thread {thread} Preparing list")
-                pingable,currentSub,subsCache = [],"127.0.0.0/8",{}
+                pingable,subsCache = [],{}
                 for ip in dumpTxT.splitlines(): pingable.append(ip)
                 pingable = sorted(pingable, key = ipaddress.IPv4Address)
                 print(f"Thread {thread} Building list")
                 for ip in pingable:
                     lookup = self.asndb.lookup(ip)
                     if lookup[0] == None: continue
-                    if lookup[1] != currentSub:
-                        if not lookup[1] in subsCache: subsCache[lookup[1]] = self.networkToSubs(lookup[1])
-                        if not lookup[1] in dataList: dataList[lookup[1]] = {}
-                        currentSub = lookup[1]
-                        if not dataList[lookup[1]]:
-                            for sub in subsCache[lookup[1]]: dataList[lookup[1]][sub] = []
-                    sub, prefix = lookup[1].split("/")
-                    if int(prefix) == 24:
-                        if len(dataList[lookup[1]][lookup[1]]) > 20: continue
-                        #only append last octet
-                        dataList[lookup[1]][lookup[1]].append(ip.split(".")[-1])
-                        continue
-                    else:
-                        for sub in list(subsCache[lookup[1]]):
-                            if ipaddress.IPv4Address(ip) in ipaddress.IPv4Network(sub):
-                                if len(dataList[lookup[1]][sub]) > 20: 
-                                    subsCache[lookup[1]].remove(sub)
-                                    break
-                                #only append last octet 
-                                dataList[lookup[1]][sub].append(ip.split(".")[-1])
-                                break
+                    if not lookup[1] in dataList: dataList[lookup[1]] = {}
+                    currentSub = ip.split(".")
+                    currentSub = currentSub[:-1]
+                    currentSub.append("0/24")
+                    currentSub = ".".join(currentSub)
+                    if not currentSub in dataList[lookup[1]]: dataList[lookup[1]][currentSub] = []
+                    if len(dataList[lookup[1]][currentSub]) > 20: continue
+                    dataList[lookup[1]][currentSub].append(ip.split(".")[-1])
             diff += int(datetime.now().timestamp()) - current
             devidor = 1 if index == 0 else index
             print(f"Thread {thread} Finished in approximately {round((diff / devidor) * (len(files) - index) / 60)} minute(s)")
