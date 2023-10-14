@@ -116,12 +116,11 @@ class Geolocator(Base):
                 for ip in pingable:
                     lookup = self.asndb.lookup(ip)
                     if lookup[0] == None: continue
-                    if not lookup[1] in dataList: dataList[lookup[1]] = {}
+                    if not lookup[1] in dataList: dataList[lookup[1]] = self.networkToSubs(lookup[1])
                     currentSub = ip.split(".")
                     currentSub = currentSub[:-1]
                     currentSub.append("0/24")
                     currentSub = ".".join(currentSub)
-                    if not currentSub in dataList[lookup[1]]: dataList[lookup[1]][currentSub] = []
                     if len(dataList[lookup[1]][currentSub]) > 20: continue
                     dataList[lookup[1]][currentSub].append(ip.split(".")[-1])
             diff += int(datetime.now().timestamp()) - current
