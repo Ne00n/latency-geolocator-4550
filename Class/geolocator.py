@@ -137,9 +137,6 @@ class Geolocator(Base):
                                 #only append last octet 
                                 dataList[lookup[1]][sub].append(ip.split(".")[-1])
                                 break
-                            else:
-                                #since its a ordered list of ips, we can just drop any subnets that we have no data on
-                                subsCache[lookup[1]].remove(sub)
             diff += int(datetime.now().timestamp()) - current
             devidor = 1 if index == 0 else index
             print(f"Thread {thread} Finished in approximately {round((diff / devidor) * (len(files) - index) / 60)} minute(s)")
