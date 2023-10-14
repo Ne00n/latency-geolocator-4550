@@ -222,9 +222,11 @@ class Geolocator(Base):
                 latency = Geolocator.getAvrg(results)
                 if not latency:
                     failed += 1
+                    print(location['name'],"Failed increased to",failed)
                     for ip in ips: latency[mapping[ip]] = "retry"
                 else:
                     failed = 0
+                    print(location['name'],"Failed reset to",failed)
                 subnets,networks = Geolocator.mapToSubnet(latency,mapping,subnets,networks)
                 if row + (batchSize * multiplicator) >= length or row % ((batchSize * multiplicator) * 20) == 0:
                     if update is False:
