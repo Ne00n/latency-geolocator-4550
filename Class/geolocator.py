@@ -120,9 +120,9 @@ class Geolocator(Base):
                         if not lookup[1] in subsCache: subsCache[lookup[1]] = self.networkToSubs(lookup[1])
                         if not lookup[1] in dataList: dataList[lookup[1]] = {}
                         currentSub = lookup[1]
-                        for sub in subsCache[lookup[1]]: dataList[lookup[1]][sub] = []
+                        if not dataList[lookup[1]]:
+                            for sub in subsCache[lookup[1]]: dataList[lookup[1]][sub] = []
                     sub, prefix = lookup[1].split("/")
-                    if not subsCache[lookup[1]]: continue
                     if int(prefix) == 24:
                         if len(dataList[lookup[1]][lookup[1]]) > 20: continue
                         #only append last octet
