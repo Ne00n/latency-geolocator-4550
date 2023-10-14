@@ -103,7 +103,7 @@ class Geolocator(Base):
         dataList,diff = {},0
         for index, file in enumerate(files):
             print(f"Thread {thread} {index} of {len(files)} files")
-            current = int(datetime.now().timestamp())
+            current,ignoreSub = int(datetime.now().timestamp()),[]
             if file.endswith(".txt"):
                 print(f"Thread {thread} Loading {file}")
                 with open(self.masscanDir+file, 'r') as f:
@@ -119,19 +119,20 @@ class Geolocator(Base):
                     if lookup[1] != currentSub:
                         if not lookup[1] in subsCache: subsCache[lookup[1]] = self.networkToSubs(lookup[1])
                         if not lookup[1] in dataList: dataList[lookup[1]] = {}
-                        currentSub,lastSub = lookup[1],0
+                        currentSub = lookup[1]
                         for sub in subsCache[lookup[1]]: dataList[lookup[1]][sub] = []
                     if len(subsCache[lookup[1]]) == 1:
                         if len(dataList[lookup[1]][lookup[1]]) > 20: continue
                         dataList[lookup[1]][lookup[1]].append(ip.split(".")[-1])
                         continue
                     else:
-                        for iSub, sub in enumerate(subsCache[lookup[1]]):
-                            if iSub < lastSub: continue
+                        for sub in subsCache[lookup[1]]:
+                            if sub in ignoreSub: continue
                             if ipaddress.IPv4Address(ip) in ipaddress.IPv4Network(sub):
-                                if len(dataList[lookup[1]][sub]) > 20: break
+                                if len(dataList[lookup[1]][sub]) > 20: 
+                                    ignoreSub.append(sub)
+                                    break
                                 dataList[lookup[1]][sub].append(ip.split(".")[-1])
-                                lastSub = iSub
                                 break
             diff += int(datetime.now().timestamp()) - current
             devidor = 1 if index == 0 else index
