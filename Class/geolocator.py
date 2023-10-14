@@ -202,13 +202,16 @@ class Geolocator(Base):
 
     @staticmethod
     def fpingLocation(location,barrier=False,update=False,length=0,notPingable=[],mapping={},multiplicator=1,batchSize=1000):
-        row,map,failedIPs,subnets,networks = 0,{},[],{},{}
+        row,map,failedIPs,failed,subnets,networks = 0,{},[],0,{},{}
         connection = sqlite3.connect("file:subnets?mode=memory&cache=shared", uri=True)
         while row < length:
             current = int(datetime.now().timestamp())
             if update is False:  ips,mapping = Geolocator.getIPs(connection,row,batchSize * multiplicator)
             if update is True: ips = Geolocator.SliceAndDice(notPingable,row,batchSize * multiplicator)
-            if ips:
+            if failed >= 10:
+                print(location['name'],"Failed at",failed,"skipping")
+                for ip in ips: latency[mapping[ip]] = "retry"
+            elif ips and failed < 10:
                 command,commands = f"ssh {location['user']}@{location['ip']} python3 fping.py",[]
                 loops = math.ceil(len(ips) / batchSize )
                 for index in range(0,loops):
@@ -218,8 +221,10 @@ class Geolocator(Base):
                 results = pool.map(Geolocator.cmd, commands)
                 latency = Geolocator.getAvrg(results)
                 if not latency:
-                    for ip in ips:
-                        latency[mapping[ip]] = "retry"
+                    failed += 1
+                    for ip in ips: latency[mapping[ip]] = "retry"
+                else:
+                    failed = 0
                 subnets,networks = Geolocator.mapToSubnet(latency,mapping,subnets,networks)
                 if row + (batchSize * multiplicator) >= length or row % ((batchSize * multiplicator) * 20) == 0:
                     if update is False:
