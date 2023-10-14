@@ -123,14 +123,14 @@ class Geolocator(Base):
                         for sub in subsCache[lookup[1]]: dataList[lookup[1]][sub] = []
                     if len(subsCache[lookup[1]]) == 1:
                         if len(dataList[lookup[1]][lookup[1]]) > 20: continue
-                        dataList[lookup[1]][lookup[1]].append(ip)
+                        dataList[lookup[1]][lookup[1]].append(ip.split(".")[-1])
                         continue
                     else:
                         for iSub, sub in enumerate(subsCache[lookup[1]]):
                             if iSub < lastSub: continue
                             if ipaddress.IPv4Address(ip) in ipaddress.IPv4Network(sub):
                                 if len(dataList[lookup[1]][sub]) > 20: break
-                                dataList[lookup[1]][sub].append(ip)
+                                dataList[lookup[1]][sub].append(ip.split(".")[-1])
                                 lastSub = iSub
                                 break
             diff += int(datetime.now().timestamp()) - current
