@@ -3,9 +3,12 @@ import subprocess, netaddr, json, re, os
 class Base:
 
     @staticmethod
-    def cmd(command):
-        p = subprocess.run(command, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-        return [p.stdout.decode('utf-8'),p.stderr.decode('utf-8')]
+    def cmd(command,timeout=60):
+        try:
+            p = subprocess.run(command, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, timeout=timeout)
+            return [p.stdout.decode('utf-8'),p.stderr.decode('utf-8')]
+        except:
+            return ["",""]
 
     @staticmethod
     def cmdInitial(command,timeout=10):
