@@ -38,7 +38,10 @@ class Geolocator(Base):
             for sub,ips in pingable[subnet].items():
                 if whitelist and not f'{sub}.0/24' in whitelist: continue
                 ipList = []
-                for ip in ips: ipList.append(f"{sub}.{ip}")
+                for ip in ips: 
+                    current = f"{sub}.{ip}"
+                    if current in failedIPs: continue
+                    ipList.append(current)
                 ipList  = ",".join(ipList)
                 if ipList: 
                     self.pingableLength += 1
