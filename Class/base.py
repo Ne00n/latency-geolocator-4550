@@ -20,14 +20,6 @@ class Base:
             return ["",""]
 
     @staticmethod
-    def SliceAndDice(notPingable,row,length=1000):
-        if row + 1000 > len(notPingable):
-            maximale = len(notPingable)
-        else:
-            maximale = row + length
-        return notPingable[row:maximale]
-
-    @staticmethod
     def dictToCsv(dict):
         csv = ""
         for line in dict.items():

@@ -28,7 +28,7 @@ class Geolocator(Base):
         print("Loading mtr.json")
         self.mtrLocations = self.loadJson(os.getcwd()+'/mtr.json')
 
-    def loadPingable(self,whitelist=[]):
+    def loadPingable(self,whitelist=[],failedIPs=[]):
         print("Loading pingable.json")
         pingable = self.loadJson(os.getcwd()+'/pingable.json')
         print("Offloading pingable.json into SQLite Database")
@@ -204,8 +204,7 @@ class Geolocator(Base):
         connection = sqlite3.connect("file:subnets?mode=memory&cache=shared", uri=True)
         while row < length:
             current = int(datetime.now().timestamp())
-            if update is False:  ips,mapping = Geolocator.getIPs(connection,row,batchSize * multiplicator)
-            if update is True: ips = Geolocator.SliceAndDice(notPingable,row,batchSize * multiplicator)
+            ips,mapping = Geolocator.getIPs(connection,row,batchSize * multiplicator)
             if failed >= 10:
                 print(location['name'],"Failed at",failed,"skipping")
                 for ip in ips: latency[ip] = "failed"
@@ -580,13 +579,12 @@ class Geolocator(Base):
         else:
             print("Could not find GeoLite2-Country.mmdb")
 
-        self.loadPingable()
-
         current,runs,failedIPs = 0,1,[]
         if type == "retry" and float(latency) > 0: runs = float(latency)
         print(f"Running {runs} times")
         while current < runs:
             notPingable = []
+            print("Building notPingable list")
             for location in self.locations:
                 print(f"Checking {location['name']} {location['ip']}")
                 command = f"ssh {location['user']}@{location['ip']}"
@@ -612,15 +610,14 @@ class Geolocator(Base):
                             except Exception as e:
                                 print("Skipping",prefix)
             notPingable,tmp = list(set(notPingable)),""
-            print("Fetching Random IPs")
-            self.notPingable,self.mapping = self.SubnetsToRandomIP(notPingable,failedIPs)
+            self.loadPingable(notPingable,failedIPs)
             notPingable = ""
 
-            print("Found",len(self.notPingable),"subnets")
-            if len(self.notPingable) == 0: return False
+            print("Found",len(notPingable),"subnets")
+            if len(notPingable) == 0: return False
 
             pool = Pool(max_workers = len(self.locations))
-            fping = partial(self.fpingLocation, barrier=barrier,update=True,length=len(self.notPingable),notPingable=self.notPingable,mapping=self.mapping)
+            fping = partial(self.fpingLocation, barrier=barrier,update=True,length=len(notPingable))
             results = pool.map(fping, self.locations)
             #wait for everything
             pool.shutdown(wait=True)
