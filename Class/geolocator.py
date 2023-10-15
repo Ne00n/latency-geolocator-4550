@@ -28,17 +28,15 @@ class Geolocator(Base):
         print("Loading mtr.json")
         self.mtrLocations = self.loadJson(os.getcwd()+'/mtr.json')
 
-    def loadPingable(self,offloading=True):
+    def loadPingable(self,whitelist=[]):
         print("Loading pingable.json")
         pingable = self.loadJson(os.getcwd()+'/pingable.json')
-        if offloading is False:
-            self.pingable = pingable
-            return
         print("Offloading pingable.json into SQLite Database")
         self.connection.execute("""CREATE TABLE subnets (subnet, sub, ips)""")
         self.pingableLength = 0
         for subnet in pingable:
             for sub,ips in pingable[subnet].items():
+                if whitelist and not f'{sub}.0/24' in whitelist: continue
                 ipList = []
                 for ip in ips: ipList.append(f"{sub}.{ip}")
                 ipList  = ",".join(ipList)
