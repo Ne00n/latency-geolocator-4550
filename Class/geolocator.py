@@ -210,7 +210,7 @@ class Geolocator(Base):
             if update is True: ips = Geolocator.SliceAndDice(notPingable,row,batchSize * multiplicator)
             if failed >= 10:
                 print(location['name'],"Failed at",failed,"skipping")
-                for ip in ips: latency[mapping[ip]] = "failed"
+                for ip in ips: latency[ip] = "failed"
             elif ips and failed < 10:
                 command,commands = f"ssh {location['user']}@{location['ip']} python3 fping.py",[]
                 loops = math.ceil(len(ips) / batchSize )
@@ -223,7 +223,7 @@ class Geolocator(Base):
                 if not latency:
                     failed += 1
                     print(location['name'],"Failed increased to",failed)
-                    for ip in ips: latency[mapping[ip]] = "retry"
+                    for ip in ips: latency[ip] = "retry"
                 else:
                     failed = 0
                     print(location['name'],"Failed reset to",failed)
