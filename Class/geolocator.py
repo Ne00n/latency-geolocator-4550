@@ -590,6 +590,12 @@ class Geolocator(Base):
         while current < runs:
             notPingable = []
             for location in self.locations:
+                print(f"Checking {location['name']} {location['ip']}")
+                command = f"ssh {location['user']}@{location['ip']}"
+                result = Geolocator.cmdInitial([command,"fping -c1 1.1.1.1"])
+                if not result[0]:
+                    print("Skipping Loading",location['name']+"-subnets.csv since offline")
+                    continue
                 print("Loading",location['name']+"-subnets.csv")
                 with open(os.getcwd()+'/data/'+location['name']+"-subnets.csv") as file:
                     for line in file:
