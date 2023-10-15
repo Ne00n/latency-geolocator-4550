@@ -633,8 +633,6 @@ class Geolocator(Base):
                 for ip in result:
                     if not ip in ips: ips[ip] = 0
                     ips[ip] += 1
-            for ip,count in ips.items():
-                if count == len(self.locations):
-                    failedIPs.append(ip)
+            for ip,count in ips.items(): failedIPs.append(ip)
             failedIPs = list(set(failedIPs))
             current += 1
