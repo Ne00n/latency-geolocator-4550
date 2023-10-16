@@ -55,9 +55,6 @@ class Geolocator(Base):
         else:
             return list(connection.execute("SELECT * FROM subnets WHERE subnet=?", (subnet,)))
 
-    def dumpDatabase(self):
-        return list(self.connection.execute("SELECT * FROM subnets"))
-
     def fill(self):
         #ignore DoD
         ignore = ["7","11","21","22","26","28","29","30","33"]
@@ -178,27 +175,6 @@ class Geolocator(Base):
                 ips.append(ip)
                 mapping[ip] = row[1]
                 if index == 0: break
-        return ips,mapping
-
-    def SubnetsToRandomIP(self,list,blacklist=[]):
-        mapping,ips = {},[]
-        blacklistSet = set(blacklist)
-        #get the full pingable.json
-        subnetsList = self.dumpDatabase()
-        subnets = Geolocator.listToDict(subnetsList)
-        #go through the subnets we should get a random ip for
-        for subnet in list:
-            #if the subnet is not in the pingable.json ignore it
-            if subnet not in subnets: continue
-            #get a list of the pingable ip's from that subnet
-            ipaaaays = subnets[subnet].split(",")
-            #get random ip
-            for runs in range(3):
-                randomIP = random.choice(ipaaaays)
-                if randomIP in blacklistSet: continue
-                ips.append(randomIP)
-                mapping[randomIP] = subnet
-                break
         return ips,mapping
 
     @staticmethod
