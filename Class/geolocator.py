@@ -29,6 +29,7 @@ class Geolocator(Base):
         self.mtrLocations = self.loadJson(os.getcwd()+'/mtr.json')
 
     def loadPingable(self,whitelist=[],failedIPs=[]):
+        whitelist = set(whitelist)
         print("Loading pingable.json")
         pingable = self.loadJson(os.getcwd()+'/pingable.json')
         print("Offloading pingable.json into SQLite Database")
