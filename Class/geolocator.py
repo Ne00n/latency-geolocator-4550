@@ -589,10 +589,14 @@ class Geolocator(Base):
                             except Exception as e:
                                 print("Skipping",prefix)
             notPingable,tmp = list(set(notPingable)),""
+            print("Reset SQLite")
             #reset sqlite
             self.connection.close()
             self.connection = sqlite3.connect("file:subnets?mode=memory&cache=shared", uri=True)
+            print("Building Pingable")
             #load into sqlite
+            print(f"Found {len(notPingable)} subnets without data")
+            print(f"Ignoring {len(failedIPs)} IP's")
             self.loadPingable(notPingable,failedIPs)
             notPingable = ""
 
