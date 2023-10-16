@@ -30,6 +30,7 @@ class Geolocator(Base):
 
     def loadPingable(self,whitelist=[],failedIPs=[]):
         whitelist = set(whitelist)
+        failedIPs = set(failedIPs)
         print("Loading pingable.json")
         pingable = self.loadJson(os.getcwd()+'/pingable.json')
         print("Offloading pingable.json into SQLite Database")
@@ -599,10 +600,10 @@ class Geolocator(Base):
             print(f"Found {len(notPingable)} subnets without data")
             print(f"Ignoring {len(failedIPs)} IP's")
             self.loadPingable(notPingable,failedIPs)
-            notPingable = ""
 
             print("Found",len(notPingable),"subnets")
             if len(notPingable) == 0: return False
+            notPingable = ""
 
             pool = Pool(max_workers = len(self.locations))
             fping = partial(self.fpingLocation, barrier=barrier,update=True,length=len(notPingable))
