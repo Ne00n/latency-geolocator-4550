@@ -606,7 +606,7 @@ class Geolocator(Base):
             notPingable = ""
 
             pool = Pool(max_workers = len(self.locations))
-            fping = partial(self.fpingLocation, barrier=barrier,update=True,length=len(self.pingableLength))
+            fping = partial(self.fpingLocation, barrier=barrier,update=True,length=self.pingableLength)
             results = pool.map(fping, self.locations)
             #wait for everything
             pool.shutdown(wait=True)
