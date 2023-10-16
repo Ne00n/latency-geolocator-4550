@@ -20,7 +20,10 @@ elif sys.argv[1] == "mtr":
 elif sys.argv[1] == "geolocate":
     geolocator.geolocate()
 elif sys.argv[1] == "generate":
-    geolocator.generate()
+    if len(sys.argv) > 2:
+        geolocator.generate(sys.argv[2])
+    else:
+        geolocator.generate()
 elif sys.argv[1] == "debug":
     geolocator.debug(sys.argv[2])
 elif sys.argv[1] == "rerun":
