@@ -434,7 +434,7 @@ class Geolocator(Base):
             if index != len(cords) -1: closestCords += ","
         return closestCords
 
-    def generate(self):
+    def generate(self,filename="geo"):
         print("Generate")
         latency,export = {},{}
         print("Building latency dict")
@@ -478,7 +478,7 @@ class Geolocator(Base):
                     cords = self.getCords(subData['closest'])
                     export[subData['location']][cords][subData['latency']].append(sub)
         gap = {}
-        print("Saving geo.mmdb")
+        print(f"Saving {filename}.mmdb")
         writer = MMDBWriter(4, 'GeoIP2-City', languages=['EN'], description="yammdb")
         for location,cords in export.items():
             locationData = self.getDataFromLocationID(location)
@@ -489,9 +489,9 @@ class Geolocator(Base):
                             'location':{"accuracy_radius":float(ms),"latitude":float(locationData['latitude']),"longitude":float(locationData['longitude'])},
                             'city':{"geoname_id":cord}}
                     writer.insert_network(IPSet(subnets), info)
-        print("Writing geo.mmdb")
-        writer.to_db_file('geo.mmdb')
-        print("Writing geo.csv")
+        print(f"Writing {filename}.mmdb")
+        writer.to_db_file(f'{filename}.mmdb')
+        print(f"Writing {filename}.csv")
         csv = "Subnet,Continent,Country,Latitude,Longitude,Latency\n"
         for location,cords in export.items():
             locationData = self.getDataFromLocationID(location)
@@ -499,7 +499,7 @@ class Geolocator(Base):
                 for ms,subnets in latency.items():
                     for subnet in subnets:
                         csv += f"{subnet},{locationData['continent']},{locationData['country']},{locationData['latitude']},{locationData['longitude']},{ms}\n"
-        with open("geo.csv", "w+") as f: f.write(csv)
+        with open(f"{filename}.csv", "w+") as f: f.write(csv)
         return export
 
     def getDataFromLocationID(self,location):
