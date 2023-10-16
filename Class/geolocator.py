@@ -601,7 +601,7 @@ class Geolocator(Base):
             print(f"Ignoring {len(failedIPs)} IP's")
             self.loadPingable(notPingable,failedIPs)
 
-            print("Found",len(notPingable),"subnets")
+            print("Found",self.pingableLength,"subnets")
             if len(notPingable) == 0: return False
             notPingable = ""
 
