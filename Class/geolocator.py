@@ -557,6 +557,13 @@ class Geolocator(Base):
         else:
             print("Could not find GeoLite2-Country.mmdb")
 
+        failedIPs = []
+        try:
+            if os.path.exists(os.getcwd()+"/failedIPs.json"):
+                failedIPs = self.loadJson(os.getcwd()+'/failedIPs.json')
+        except:
+            failedIPs = []
+
         current,runs,failedIPs = 0,1,[]
         if type == "retry" and float(latency) > 0: runs = float(latency)
         print(f"Running {runs} times")
