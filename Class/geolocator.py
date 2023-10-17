@@ -307,6 +307,7 @@ class Geolocator(Base):
             if len(run) > 0 and location['name'] in run: barriers += 1
 
         barrier = multiprocessing.Barrier(barriers)
+        if os.path.exists(os.getcwd()+"/failedIPs.json"): os.remove(os.getcwd()+"/failedIPs.json")
 
         self.loadPingable()
         print("Got",str(self.pingableLength),"subnets")
