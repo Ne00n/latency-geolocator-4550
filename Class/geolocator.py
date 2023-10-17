@@ -45,6 +45,7 @@ class Geolocator(Base):
                     if current in failedIPs: continue
                     ipList.append(current)
                 ipList  = ",".join(ipList)
+                random.shuffle(ipList)
                 if ipList: 
                     self.pingableLength += 1
                     self.connection.execute(f"INSERT INTO subnets VALUES ('{subnet}','{sub}.0/24', '{ipList}')")
