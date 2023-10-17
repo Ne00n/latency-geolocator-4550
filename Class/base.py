@@ -44,13 +44,12 @@ class Base:
     @staticmethod
     def getAvrg(results):
         latency = {}
-        for row in results:
-            parsed = re.findall("([0-9.]+).*?:.*?([0-9+])%(.*?\/([0-9.]+))?",row[0], re.MULTILINE)
-            for line in parsed:
-                if line[3] != "":
-                    latency[line[0]] = line[3]
-                else:
-                    latency[line[0]] = "retry"
+        parsed = re.findall("([0-9.]+).*?:.*?([0-9+])%(.*?\/([0-9.]+))?",results[0], re.MULTILINE)
+        for line in parsed:
+            if line[3] != "":
+                latency[line[0]] = line[3]
+            else:
+                latency[line[0]] = "retry"
         return latency
 
     def networkToSubs(self,subnet):

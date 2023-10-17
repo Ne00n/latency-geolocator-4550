@@ -190,13 +190,9 @@ class Geolocator(Base):
                 print(location['name'],"Failed at",failed,"skipping")
                 for ip in ips: latency[ip] = "failed"
             elif ips and failed < 10:
-                command,commands = f"ssh {location['user']}@{location['ip']} python3 fping.py",[]
-                loops = math.ceil(len(ips) / batchSize )
-                for index in range(0,loops):
-                    if ips[index*batchSize:(index+1)*batchSize]: commands.append(f"{command} {' '.join(ips[index*batchSize:(index+1)*batchSize])}")
-                print(location['name'],f"Running fping with {multiplicator} threads and {len(commands)} batches")
-                pool = multiprocessing.Pool(processes = multiplicator)
-                results = pool.map(Geolocator.cmd, commands)
+                command = f"ssh {location['user']}@{location['ip']} python3 fping.py {' '.join(ips)}"
+                print(location['name'],f"Running fping")
+                results = Geolocator.cmd(command)
                 latency = Geolocator.getAvrg(results)
                 if not latency:
                     failed += 1
