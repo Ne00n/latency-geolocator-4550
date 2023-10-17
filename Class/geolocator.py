@@ -623,4 +623,5 @@ class Geolocator(Base):
                     ips[ip] += 1
             for ip,count in ips.items(): failedIPs.append(ip)
             failedIPs = list(set(failedIPs))
+            self.saveJson(failedIPs,os.getcwd()+'/failedIPs.json')
             current += 1
