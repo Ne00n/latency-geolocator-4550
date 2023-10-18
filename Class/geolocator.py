@@ -448,57 +448,33 @@ class Geolocator(Base):
                 #we only need the lowest anyway
                 latency[subnet] = {list(latency[subnet].keys())[0]:list(latency[subnet].values())[0]}
         print("Building export list")
-        gap = {}
         for subnet,data in latency.items():
             location = list(data)[0]
             latency = data[location]
-            cords = self.getCords(data)
             if not location in export: export[location] = {}
-            if not cords in export[location]: export[location][cords] = {}
-            if not latency in export[location][cords]: export[location][cords][latency] = []
-            export[location][cords][latency].append(subnet)
-            ip, prefix = subnet.split("/")
-            if int(prefix) < 24:
-                lookup = self.asndb.lookup(ip)
-                if lookup[0] == None: continue
-                ip, prefix = lookup[1].split("/")
-                if int(prefix) > 23: continue
-                if not lookup[1] in gap: gap[lookup[1]] = {}
-                gap[lookup[1]][subnet] = {"location":location,'latency':latency,"closest":data}
+            if not latency in export[location]: export[location][latency] = []
+            export[location][latency].append(subnet)
         latency = {}
         print("Filling the gaps")
-        for subnet,data in gap.items():
-            subs,last = self.networkToSubs(subnet),""
-            for sub in subs:
-                if sub in gap[subnet]:
-                    last = sub
-                else:
-                    if last == "": last = next(iter(data))
-                    subData = data[last]
-                    cords = self.getCords(subData['closest'])
-                    export[subData['location']][cords][subData['latency']].append(sub)
-        gap = {}
+        
         print(f"Saving {filename}.mmdb")
         writer = MMDBWriter(4, 'GeoIP2-City', languages=['EN'], description="yammdb")
-        for location,cords in export.items():
+        for location,data in export.items():
             locationData = self.getDataFromLocationID(location)
-            for cord, latency in cords.items():
-                for ms,subnets in latency.items():
-                    info = {'country':{'iso_code':locationData['country']},
-                            'continent':{'code':locationData['continent']},
-                            'location':{"accuracy_radius":float(ms),"latitude":float(locationData['latitude']),"longitude":float(locationData['longitude'])},
-                            'city':{"geoname_id":cord}}
-                    writer.insert_network(IPSet(subnets), info)
+            for latency,subnets in data.items():
+                info = {'country':{'iso_code':locationData['country']},
+                        'continent':{'code':locationData['continent']},
+                        'location':{"accuracy_radius":float(latency),"latitude":float(locationData['latitude']),"longitude":float(locationData['longitude'])}}
+                writer.insert_network(IPSet(subnets), info)
         print(f"Writing {filename}.mmdb")
         writer.to_db_file(f'{filename}.mmdb')
         print(f"Writing {filename}.csv")
         csv = "Subnet,Continent,Country,Latitude,Longitude,Latency\n"
-        for location,cords in export.items():
+        for location,data in export.items():
             locationData = self.getDataFromLocationID(location)
-            for cord, latency in cords.items():
-                for ms,subnets in latency.items():
+            for latency,subnets in data.items():
                     for subnet in subnets:
-                        csv += f"{subnet},{locationData['continent']},{locationData['country']},{locationData['latitude']},{locationData['longitude']},{ms}\n"
+                        csv += f"{subnet},{locationData['continent']},{locationData['country']},{locationData['latitude']},{locationData['longitude']},{latency}\n"
         with open(f"{filename}.csv", "w+") as f: f.write(csv)
         return export
 
