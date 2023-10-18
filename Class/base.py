@@ -52,6 +52,11 @@ class Base:
                 latency[line[0]] = "retry"
         return latency
 
+    def findStartLatency(self,latency,subnets):
+        for subnet in subnets:
+            if subnet in latency: return next(iter(latency[subnet].values())),next(iter(latency[subnet].keys()))
+        return 0,0
+
     def networkToSubs(self,subnet):
         sub, prefix = subnet.split("/")
         if int(prefix) > 23: return [subnet]
