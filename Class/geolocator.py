@@ -462,6 +462,7 @@ class Geolocator(Base):
             network, prefix = lookup[1].split("/")
             if int(prefix) > 24: continue
             if not lookup[1] in cache: cache[lookup[1]] = self.networkToSubs(lookup[1])
+            if not cache[lookup[1]]: continue
             currentLatency,currentLocation = self.findStartLatency(latency,cache[lookup[1]])
             for subSub in list(cache[lookup[1]]):
                 if subSub in latency: currentLatency,currentLocation = next(iter(latency[subSub].values())),next(iter(latency[subSub].keys()))
