@@ -450,13 +450,26 @@ class Geolocator(Base):
         print("Building export list")
         for subnet,data in latency.items():
             location = list(data)[0]
-            latency = data[location]
+            ms = data[location]
             if not location in export: export[location] = {}
-            if not latency in export[location]: export[location][latency] = []
-            export[location][latency].append(subnet)
-        latency = {}
+            if not ms in export[location]: export[location][ms] = []
+            export[location][ms].append(subnet)
         print("Filling the gaps")
-        
+        cache,total = {},0
+        for subnet in latency:
+            network, prefix = subnet.split("/")
+            lookup = self.asndb.lookup(f"{network}")
+            network, prefix = lookup[1].split("/")
+            if int(prefix) > 24: continue
+            if not lookup[1] in cache: cache[lookup[1]] = self.networkToSubs(lookup[1])
+            currentLatency,currentLocation = self.findStartLatency(latency,cache[lookup[1]])
+            for subSub in list(cache[lookup[1]]):
+                if subSub in latency: currentLatency,currentLocation = next(iter(latency[subSub].values())),next(iter(latency[subSub].keys()))
+                elif not subSub in latency: 
+                    export[currentLocation][currentLatency].append(subSub)
+                    total += 1
+                cache[lookup[1]].remove(subSub)
+        print(f"Filled {total} gaps")
         print(f"Saving {filename}.mmdb")
         writer = MMDBWriter(4, 'GeoIP2-City', languages=['EN'], description="yammdb")
         for location,data in export.items():
@@ -468,13 +481,14 @@ class Geolocator(Base):
                 writer.insert_network(IPSet(subnets), info)
         print(f"Writing {filename}.mmdb")
         writer.to_db_file(f'{filename}.mmdb')
-        print(f"Writing {filename}.csv")
+        print(f"Saving {filename}.csv")
         csv = "Subnet,Continent,Country,Latitude,Longitude,Latency\n"
         for location,data in export.items():
             locationData = self.getDataFromLocationID(location)
             for latency,subnets in data.items():
                     for subnet in subnets:
                         csv += f"{subnet},{locationData['continent']},{locationData['country']},{locationData['latitude']},{locationData['longitude']},{latency}\n"
+        print(f"Writing {filename}.csv")
         with open(f"{filename}.csv", "w+") as f: f.write(csv)
         return export
 
