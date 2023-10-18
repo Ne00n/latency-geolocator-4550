@@ -319,7 +319,6 @@ class Geolocator(Base):
 
         if subnet: 
             self.loadPingable([subnet],[],True)
-            subnets.append(subnet)
         else:
             self.loadPingable()
         print("Got",str(self.pingableLength),"subnets")
