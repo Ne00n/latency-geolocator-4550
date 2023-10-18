@@ -2,6 +2,7 @@ import ipaddress, in_place, random, pyasn, sqlite3, time, json, math, sys, re, o
 from concurrent.futures import ProcessPoolExecutor as Pool
 from aggregate_prefixes import aggregate_prefixes
 from multiprocessing import Process, Queue
+from ipaddress import ip_network, ip_address
 from netaddr import IPNetwork, IPSet
 from mmdb_writer import MMDBWriter
 from functools import partial
@@ -28,7 +29,7 @@ class Geolocator(Base):
         print("Loading mtr.json")
         self.mtrLocations = self.loadJson(os.getcwd()+'/mtr.json')
 
-    def loadPingable(self,whitelist=[],failedIPs=[]):
+    def loadPingable(self,whitelist=[],failedIPs=[],contains=False):
         whitelist = set(whitelist)
         failedIPs = set(failedIPs)
         print("Loading pingable.json")
@@ -38,14 +39,18 @@ class Geolocator(Base):
         self.pingableLength = 0
         for subnet in pingable:
             for sub,ips in pingable[subnet].items():
-                if whitelist and not f'{sub}.0/24' in whitelist: continue
+                if contains is False and whitelist and not f'{sub}.0/24' in whitelist: continue
+                elif contains:
+                    a = ip_network(next(iter(whitelist)))
+                    b = ip_network(subnet)
+                    if not b.subnet_of(a): break
                 ipList = []
                 for ip in ips: 
                     current = f"{sub}.{ip}"
                     if current in failedIPs: continue
                     ipList.append(current)
-                ipList  = ",".join(ipList)
                 random.shuffle(ipList)
+                ipList  = ",".join(ipList)
                 if ipList: 
                     self.pingableLength += 1
                     self.connection.execute(f"INSERT INTO subnets VALUES ('{subnet}','{sub}.0/24', '{ipList}')")
@@ -299,9 +304,12 @@ class Geolocator(Base):
                 run[location['name']] = "y"
         return run
 
-    def geolocate(self):
+    def geolocate(self,subnet=""):
         print("Geolocate")
-        run = self.checkFiles()
+        if subnet:
+            run = self.checkFiles("update",True)
+        else:
+            run = self.checkFiles()
         barriers = 0
         for location in self.locations:
             if len(run) > 0 and location['name'] in run: barriers += 1
@@ -309,7 +317,11 @@ class Geolocator(Base):
         barrier = multiprocessing.Barrier(barriers)
         if os.path.exists(os.getcwd()+"/failedIPs.json"): os.remove(os.getcwd()+"/failedIPs.json")
 
-        self.loadPingable()
+        if subnet: 
+            self.loadPingable([subnet],[],True)
+            subnets.append(subnet)
+        else:
+            self.loadPingable()
         print("Got",str(self.pingableLength),"subnets")
         print("Preflight")
         for location in self.locations:

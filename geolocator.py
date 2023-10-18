@@ -18,7 +18,10 @@ elif sys.argv[1] == "fill":
 elif sys.argv[1] == "mtr":
     geolocator.mtr()
 elif sys.argv[1] == "geolocate":
-    geolocator.geolocate()
+    if len(sys.argv) > 2:
+        geolocator.geolocate(sys.argv[2])
+    else:
+        geolocator.geolocate()
 elif sys.argv[1] == "generate":
     if len(sys.argv) > 2:
         geolocator.generate(sys.argv[2])
