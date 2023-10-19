@@ -128,7 +128,7 @@ class Geolocator(Base):
                     if not lookup[1] in dataList: dataList[lookup[1]] = {}
                     currentSub = ".".join(ip.split(".")[:-1])
                     if lookup[1] in smol:
-                        subnets = self.networkToSubs(currentSub,smol[lookup[1]])
+                        subnets = self.networkToSubs(f"{currentSub}.0/24",smol[lookup[1]])
                         for sub in subnets:
                             if ipaddress.IPv4Address(ip) in ipaddress.IPv4Network(sub):
                                 if len(dataList[lookup[1]][sub]) > 5: break
