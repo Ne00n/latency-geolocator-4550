@@ -457,7 +457,7 @@ class Geolocator(Base):
 
     def generate(self,filename="geo"):
         print("Generate")
-        latency,export = {},{}
+        latency,export,smol = {},{},{"172.253.0.0/16":26}
         print("Building latency dict")
         for location in self.locations:
             current = self.getLocationPart(location['name'])
@@ -482,7 +482,10 @@ class Geolocator(Base):
             lookup = self.asndb.lookup(f"{network}")
             network, prefix = lookup[1].split("/")
             if int(prefix) > 24: continue
-            if not lookup[1] in cache: cache[lookup[1]] = self.networkToSubs(lookup[1])
+            if lookup[1] in smol and not lookup[1] in cache: 
+                cache[lookup[1]] = self.networkToSubs(lookup[1],smol[lookup[1]])
+            elif lookup[1] not in smol and not lookup[1] in cache: 
+                cache[lookup[1]] = self.networkToSubs(lookup[1])
             if not cache[lookup[1]]: continue
             currentLatency,currentLocation = self.findStartLatency(latency,cache[lookup[1]])
             for subSub in list(cache[lookup[1]]):
