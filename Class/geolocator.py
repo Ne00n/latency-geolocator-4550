@@ -108,6 +108,7 @@ class Geolocator(Base):
                 print("Not found in",location['name'])
 
     def masscanFiles(self,files,thread):
+        smol = {"172.253.0.0/16":"26"}
         dataList,diff = {},0
         for index, file in enumerate(files):
             print(f"Thread {thread} {index} of {len(files)} files")
@@ -126,9 +127,17 @@ class Geolocator(Base):
                     if lookup[0] == None: continue
                     if not lookup[1] in dataList: dataList[lookup[1]] = {}
                     currentSub = ".".join(ip.split(".")[:-1])
-                    if not currentSub in dataList[lookup[1]]: dataList[lookup[1]][currentSub] = []
-                    if len(dataList[lookup[1]][currentSub]) > 20: continue
-                    dataList[lookup[1]][currentSub].append(ip.split(".")[-1])
+                    if lookup[1] in smol:
+                        subnets = self.networkToSubs(currentSub,smol[lookup[1]])
+                        for sub in subnets:
+                            if ipaddress.IPv4Address(ip) in ipaddress.IPv4Network(sub):
+                                if len(dataList[lookup[1]][sub]) > 5: break
+                                dataList[lookup[1]][sub].append(ip)
+                                break
+                    else:
+                        if not currentSub in dataList[lookup[1]]: dataList[lookup[1]][currentSub] = []
+                        if len(dataList[lookup[1]][currentSub]) > 20: continue
+                        dataList[lookup[1]][currentSub].append(ip.split(".")[-1])
             diff += int(datetime.now().timestamp()) - current
             devidor = 1 if index == 0 else index
             print(f"Thread {thread} Finished in approximately {round((diff / devidor) * (len(files) - index) / 60)} minute(s)")
