@@ -56,11 +56,11 @@ class Base:
         for subnet in subnets:
             if subnet in latency: return next(iter(latency[subnet].values())),next(iter(latency[subnet].keys()))
 
-    def networkToSubs(self,subnet):
+    def networkToSubs(self,subnet,target=24):
         sub, prefix = subnet.split("/")
-        if int(prefix) > 23: return [subnet]
+        if int(prefix) >= target: return [subnet]
         network = netaddr.IPNetwork(subnet)
-        return [str(sn) for sn in network.subnet(24)]
+        return [str(sn) for sn in network.subnet(target)]
 
     def saveJson(self,data,path):
         with open(path, 'w') as f:
