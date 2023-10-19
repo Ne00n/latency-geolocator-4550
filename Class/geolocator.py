@@ -316,7 +316,7 @@ class Geolocator(Base):
 
     def geolocate(self,subnet=""):
         print("Geolocate")
-        if subnet:
+        if subnet != "":
             run = self.checkFiles("update",True)
         else:
             run = self.checkFiles()
