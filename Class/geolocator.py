@@ -108,7 +108,7 @@ class Geolocator(Base):
                 print("Not found in",location['name'])
 
     def masscanFiles(self,files,thread):
-        smol = {"172.253.0.0/16":"26"}
+        smol = {"172.253.0.0/16":26}
         dataList,diff = {},0
         for index, file in enumerate(files):
             print(f"Thread {thread} {index} of {len(files)} files")
