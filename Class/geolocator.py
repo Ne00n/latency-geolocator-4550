@@ -126,21 +126,18 @@ class Geolocator(Base):
                     lookup = self.asndb.lookup(ip)
                     if lookup[0] == None: continue
                     if not lookup[1] in dataList: dataList[lookup[1]] = {}
-                    currentSub = ".".join(ip.split(".")[:-1])
                     if lookup[1] in smol:
-                        subnets = self.networkToSubs(f"{currentSub}.0/24",smol[lookup[1]])
+                        subnets = self.networkToSubs(lookup[1],smol[lookup[1]])
                         for sub in subnets:
-                            subnet, prefix = sub.split("/")
-                            currentSub = ".".join(subnet.split(".")[:-1])
                             if ipaddress.IPv4Address(ip) in ipaddress.IPv4Network(sub):
-                                if not currentSub in dataList[lookup[1]]: dataList[lookup[1]][currentSub] = []
-                                if len(dataList[lookup[1]][currentSub]) > 5: break
-                                dataList[lookup[1]][currentSub].append(ip.split(".")[-1])
+                                if not sub in dataList[lookup[1]]: dataList[lookup[1]][sub] = []
+                                if len(dataList[lookup[1]][sub]) > 5: break
+                                dataList[lookup[1]][sub].append(ip.split(".")[-1])
                                 break
                     else:
-                        if not currentSub in dataList[lookup[1]]: dataList[lookup[1]][currentSub] = []
-                        if len(dataList[lookup[1]][currentSub]) > 20: continue
-                        dataList[lookup[1]][currentSub].append(ip.split(".")[-1])
+                        if not lookup[1] in dataList[lookup[1]]: dataList[lookup[1]][lookup[1]] = []
+                        if len(dataList[lookup[1]][lookup[1]]) > 20: continue
+                        dataList[lookup[1]][lookup[1]].append(ip.split(".")[-1])
             diff += int(datetime.now().timestamp()) - current
             devidor = 1 if index == 0 else index
             print(f"Thread {thread} Finished in approximately {round((diff / devidor) * (len(files) - index) / 60)} minute(s)")
