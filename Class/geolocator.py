@@ -130,10 +130,12 @@ class Geolocator(Base):
                     if lookup[1] in smol:
                         subnets = self.networkToSubs(f"{currentSub}.0/24",smol[lookup[1]])
                         for sub in subnets:
+                            subnet, prefix = sub.split("/")
+                            currentSub = ".".join(subnet.split(".")[:-1])
                             if ipaddress.IPv4Address(ip) in ipaddress.IPv4Network(sub):
-                                if not sub in dataList[lookup[1]]: dataList[lookup[1]][sub] = []
-                                if len(dataList[lookup[1]][sub]) > 5: break
-                                dataList[lookup[1]][sub].append(ip.split(".")[-1])
+                                if not currentSub in dataList[lookup[1]]: dataList[lookup[1]][currentSub] = []
+                                if len(dataList[lookup[1]][currentSub]) > 5: break
+                                dataList[lookup[1]][currentSub].append(ip.split(".")[-1])
                                 break
                     else:
                         if not currentSub in dataList[lookup[1]]: dataList[lookup[1]][currentSub] = []
