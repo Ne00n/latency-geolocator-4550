@@ -39,21 +39,23 @@ class Geolocator(Base):
         self.pingableLength = 0
         for subnet in pingable:
             for sub,ips in pingable[subnet].items():
-                if contains is False and whitelist and not f'{sub}.0/24' in whitelist: continue
+                if contains is False and whitelist and not sub in whitelist: continue
                 elif contains:
                     a = ip_network(next(iter(whitelist)))
                     b = ip_network(subnet)
                     if not b.subnet_of(a): break
                 ipList = []
-                for ip in ips: 
-                    current = f"{sub}.{ip}"
+                for ip in ips:
+                    network, networkPrefix = sub.split("/")
+                    current = ".".join(network.split(".")[:-1])
+                    current = f"{current}.{ip}"
                     if current in failedIPs: continue
                     ipList.append(current)
                 random.shuffle(ipList)
                 ipList  = ",".join(ipList)
                 if ipList: 
                     self.pingableLength += 1
-                    self.connection.execute(f"INSERT INTO subnets VALUES ('{subnet}','{sub}.0/24', '{ipList}')")
+                    self.connection.execute(f"INSERT INTO subnets VALUES ('{subnet}',{sub}, '{ipList}')")
         self.connection.commit()
 
     @staticmethod
