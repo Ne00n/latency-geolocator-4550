@@ -133,7 +133,7 @@ class Geolocator(Base):
                             if ipaddress.IPv4Address(ip) in ipaddress.IPv4Network(sub):
                                 if not sub in dataList[lookup[1]]: dataList[lookup[1]][sub] = []
                                 if len(dataList[lookup[1]][sub]) > 5: break
-                                dataList[lookup[1]][sub].append(ip.split(".")[:-1])
+                                dataList[lookup[1]][sub].append(ip.split(".")[-1])
                                 break
                     else:
                         if not currentSub in dataList[lookup[1]]: dataList[lookup[1]][currentSub] = []
