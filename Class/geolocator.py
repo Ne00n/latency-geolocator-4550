@@ -126,7 +126,8 @@ class Geolocator(Base):
                     lookup = self.asndb.lookup(ip)
                     if lookup[0] == None: continue
                     if not lookup[1] in dataList: dataList[lookup[1]] = {}
-                    currentSub = ".".join(ip.split(".")[:-1]).join(".0/24")
+                    currentSub = ".".join(ip.split(".")[:-1])
+                    currentSub = f"{currentSub}.0/24"
                     if lookup[1] in smol:
                         subnets = self.networkToSubs(lookup[1],smol[lookup[1]])
                         for sub in subnets:
