@@ -56,6 +56,8 @@ class Geolocator(Base):
                 if ipList: 
                     self.pingableLength += 1
                     self.connection.execute(f"INSERT INTO subnets VALUES ('{subnet}','{sub}', '{ipList}')")
+        #apply 500k limit on reruns
+        if failedIPs and self.pingableLength > 500000: self.pingableLength = 500000
         self.connection.commit()
 
     @staticmethod
