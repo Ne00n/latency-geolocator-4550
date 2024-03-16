@@ -34,6 +34,7 @@ def classify(data):
     for slicedSubnet in data:
         #print(slicedSubnet)
         for ip in data[slicedSubnet]:
+            ip = f'{slicedSubnet.replace("0/24","")}{ip}'
             #maxmind
             try:
                 response = reader.country(ip)
